@@ -1,0 +1,151 @@
+/*
+ * Theme lab (trial only). <html data-accent="…" data-base="…"> picks an accent and a
+ * neutral base; with neither set, the defaults in globals.css apply (bronze + neutral).
+ * Light rules use :not(.dark) so they never beat the .dark tokens.
+ * Every --chart-1 here passed the dataviz validator against its mode's card surface.
+ */
+
+/* ───────────── Accents ───────────── */
+
+html[data-accent="ocean"]:not(.dark) {
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --brand: #1d4ed8;
+  --ring: #2563eb;
+  --chart-1: #2563eb;
+}
+html.dark[data-accent="ocean"] {
+  --primary: #4c8dff;
+  --primary-foreground: #0b0f17;
+  --brand: #7aa7ff;
+  --ring: #4c8dff;
+  --chart-1: #4c8dff;
+}
+
+html[data-accent="emerald"]:not(.dark) {
+  --primary: #0f9f6e;
+  --primary-foreground: #ffffff;
+  --brand: #047857;
+  --ring: #0f9f6e;
+  --chart-1: #0f9f6e;
+}
+html.dark[data-accent="emerald"] {
+  --primary: #34c38f;
+  --primary-foreground: #06140e;
+  --brand: #5fd3a6;
+  --ring: #34c38f;
+  --chart-1: #1fa774;
+}
+
+html[data-accent="coral"]:not(.dark) {
+  --primary: #e5533d;
+  --primary-foreground: #ffffff;
+  --brand: #c2410c;
+  --ring: #e5533d;
+  --chart-1: #e5533d;
+}
+html.dark[data-accent="coral"] {
+  --primary: #ff7a59;
+  --primary-foreground: #160803;
+  --brand: #ff9a80;
+  --ring: #ff7a59;
+  --chart-1: #e8603f;
+}
+
+html[data-accent="amber"]:not(.dark) {
+  --primary: #e0a21b;
+  --primary-foreground: #111111;
+  --brand: #a16207;
+  --ring: #e0a21b;
+  --chart-1: #c27c0e;
+}
+html.dark[data-accent="amber"] {
+  --primary: #f5b544;
+  --primary-foreground: #111111;
+  --brand: #f7c66d;
+  --ring: #f5b544;
+  --chart-1: #bf7e10;
+}
+
+html[data-accent="lime"]:not(.dark) {
+  --primary: #5f8f1a;
+  --primary-foreground: #ffffff;
+  --brand: #4d7c0f;
+  --ring: #5f8f1a;
+  --chart-1: #5f8f1a;
+}
+html.dark[data-accent="lime"] {
+  --primary: #b5e550;
+  --primary-foreground: #0d1203;
+  --brand: #c7ee7a;
+  --ring: #b5e550;
+  --chart-1: #6f9426;
+}
+
+/* Mono: the ink itself is the accent; charts keep the validated copper. */
+html[data-accent="mono"]:not(.dark) {
+  --primary: #111111;
+  --primary-foreground: #f4f4f3;
+  --brand: #111111;
+  --ring: #111111;
+  --chart-1: #a9622a;
+}
+html.dark[data-accent="mono"] {
+  --primary: #f2f2f2;
+  --primary-foreground: #111111;
+  --brand: #f2f2f2;
+  --ring: #f2f2f2;
+  --chart-1: #c47a3c;
+}
+
+/* ───────────── Bases (the neutral greys) ───────────── */
+
+html[data-base="warm"]:not(.dark) {
+  --background: #f5f3ef;
+  --surface: #ece8e1;
+  --card: #fffdfa;
+  --popover: #fffdfa;
+  --secondary: #e9e4dc;
+  --muted: #ece8e1;
+  --accent: #e9e4dc;
+  --sidebar: #f0ece5;
+  --sidebar-accent: #e5dfd5;
+  --muted-foreground: #5e5850;
+}
+html.dark[data-base="warm"] {
+  --background: #12100e;
+  --surface: #1a1714;
+  --card: #1f1b18;
+  --popover: #1f1b18;
+  --secondary: #28231f;
+  --muted: #1a1714;
+  --accent: #28231f;
+  --sidebar: #0e0c0a;
+  --sidebar-accent: #1f1b18;
+  --muted-foreground: #9a9189;
+}
+
+html[data-base="cool"]:not(.dark) {
+  --background: #f3f5f8;
+  --surface: #e8ecf1;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --secondary: #e4e9ef;
+  --muted: #e8ecf1;
+  --accent: #e4e9ef;
+  --sidebar: #eef1f5;
+  --sidebar-accent: #e0e6ed;
+  --muted-foreground: #55606e;
+}
+html.dark[data-base="cool"] {
+  --background: #0d1117;
+  --surface: #141a22;
+  --card: #18202a;
+  --popover: #18202a;
+  --secondary: #212a36;
+  --muted: #141a22;
+  --accent: #212a36;
+  --sidebar: #0a0e13;
+  --sidebar-accent: #18202a;
+  --muted-foreground: #8b96a5;
+}
