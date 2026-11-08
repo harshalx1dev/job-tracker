@@ -41,10 +41,12 @@ async function main() {
 
   let db: DB;
   let close: () => Promise<unknown>;
-  if (process.env.DATABASE_URL) {
+  // Scripts use the direct (unpooled) connection when there is one.
+  const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+  if (url) {
     const postgres = (await import("postgres")).default;
     const { drizzle } = await import("drizzle-orm/postgres-js");
-    const client = postgres(process.env.DATABASE_URL, { max: 1 });
+    const client = postgres(url, { max: 1 });
     db = drizzle(client, { schema, casing: "snake_case" });
     close = () => client.end();
   } else {

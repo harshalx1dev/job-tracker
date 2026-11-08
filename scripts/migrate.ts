@@ -6,7 +6,8 @@
 import { mkdirSync } from "node:fs";
 
 async function main() {
-  const url = process.env.DATABASE_URL;
+  // Migrations and scripts use the direct (unpooled) connection when there is one.
+  const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
   if (url) {
     const postgres = (await import("postgres")).default;
     const { drizzle } = await import("drizzle-orm/postgres-js");
