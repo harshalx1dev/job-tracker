@@ -29,8 +29,12 @@
 .rz-page *::after {
   box-sizing: border-box;
 }
-.rz-page :is(h1, h2, p, ul) {
+.rz-page :where(h1, h2, h3, p, ul, ol, li, dl, dd, dt) {
   margin: 0;
+  padding: 0;
+}
+.rz-page :where(ul, ol) {
+  list-style: none;
 }
 
 /* ---- header ---- */
@@ -66,7 +70,7 @@
   row-gap: 0.1em;
 }
 .rz-contact {
-  margin-top: 0.5mm;
+  margin-top: 0.25em;
   display: flex;
   flex-wrap: wrap;
   column-gap: 0.9em;
@@ -100,7 +104,10 @@
   top: 0.04em;
 }
 
-/* ---- sections ---- */
+/* ---- sections ----
+ * One rhythm, all in em. Vertical margins sit on the element that comes after a
+ * gap (margin-top), directly above a [data-unit], so a page break at a unit
+ * drops the gap instead of starting the next page with blank space. */
 .rz-section {
   margin-top: var(--rz-gap);
 }
@@ -108,31 +115,34 @@
   margin-top: 0;
 }
 .rz-h2 {
-  font-size: 1em;
+  font-size: 1.05em;
   font-weight: 700;
-  letter-spacing: 0.04em;
   line-height: 1.25;
-  margin-bottom: 1.6mm;
+  padding-bottom: 0.25em;
+  margin-bottom: 0.45em;
   break-after: avoid;
 }
 .rz-case-upper .rz-h2 {
   text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 .rz-rule-thin .rz-h2 {
-  padding-bottom: 0.8mm;
-  border-bottom: 0.5pt solid var(--rz-rule-c);
+  border-bottom: 0.75pt solid var(--rz-rule-c);
 }
 .rz-rule-thick .rz-h2 {
-  padding-bottom: 0.8mm;
   border-bottom: 1.5pt solid var(--rz-rule-c);
+}
+.rz-rule-none .rz-h2 {
+  padding-bottom: 0;
 }
 
 .rz-entry {
-  margin-top: 2.2mm;
+  margin-top: 0.55em;
 }
 .rz-h2 + .rz-entry,
 .rz-h2 + .rz-text,
-.rz-h2 + .rz-skills {
+.rz-h2 + .rz-skills,
+.rz-h2 + .rz-certs {
   margin-top: 0;
 }
 .rz-row {
@@ -158,32 +168,47 @@
   font-style: italic;
 }
 .rz-below {
-  margin-top: 0;
+  margin: 0;
 }
 .rz-text {
-  margin-top: 0.8mm;
+  margin-top: 0.15em;
   break-inside: avoid;
+}
+.rz-text + .rz-text {
+  margin-top: 0.12em;
+}
+.rz-h2 + .rz-text {
+  margin-top: 0;
 }
 .rz-list {
-  margin-top: 0.8mm;
-  padding-left: 4.6mm;
-  list-style: disc;
+  margin-top: 0.15em;
+  padding-left: 1.1em;
+  list-style: disc outside;
 }
 .rz-list li {
-  margin-top: 0.5mm;
-  padding-left: 0.4mm;
+  margin-top: 0.12em;
+  padding-left: 0;
   break-inside: avoid;
 }
-.rz-skills {
-  display: grid;
-  gap: 0.6mm;
+.rz-list li:first-child {
+  margin-top: 0;
+}
+.rz-skills,
+.rz-certs {
+  display: block;
 }
 .rz-skill {
   break-inside: avoid;
+  padding-left: 1.1em;
+  text-indent: -1.1em;
 }
-.rz-certs {
-  display: grid;
-  gap: 0.6mm;
+.rz-skill,
+.rz-cert {
+  margin-top: 0.15em;
+}
+.rz-skill:first-child,
+.rz-cert:first-child {
+  margin-top: 0;
 }
 
 /* ---- links ---- */
@@ -221,30 +246,59 @@
 }
 
 /* ---- templates ---- */
-.rz--classic .rz-name {
-  font-size: 2.1em;
+.rz--modern {
+  --rz-muted: #5b616e;
+  --rz-rule-c: #d9dce1;
+}
+.rz--modern .rz-name {
+  font-size: 2.15em;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+}
+.rz--modern .rz-headline {
+  font-size: 1.12em;
+  font-weight: 500;
+  color: var(--rz-accent);
+}
+.rz--modern .rz-contact {
+  color: var(--rz-muted);
+  font-size: 0.92em;
+}
+.rz--modern .rz-sep {
+  color: #c4c8cf;
+}
+.rz--modern .rz-h2 {
+  font-size: 0.82em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rz-accent);
+}
+.rz--modern.rz-rule-thin .rz-h2 {
+  border-bottom: 0.6pt solid var(--rz-rule-c);
+}
+.rz--modern .rz-title {
   font-weight: 600;
 }
-.rz--compact .rz-name {
-  font-size: 1.7em;
+.rz--modern .rz-comma {
+  display: none;
 }
-
-.rz-split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 56mm;
-  column-gap: 7mm;
-  align-items: start;
+.rz--modern .rz-org {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--rz-muted);
 }
-.rz-aside .rz-section:first-child {
-  margin-top: 0;
+.rz--modern .rz-sub::before {
+  content: "\00b7\00a0";
 }
-.rz-aside .rz-row {
-  flex-direction: column;
-  gap: 0;
+.rz--modern .rz-dates {
+  font-size: 0.9em;
+  color: var(--rz-muted);
+  font-variant-numeric: tabular-nums;
 }
-.rz-aside .rz-right {
-  text-align: left;
-  white-space: normal;
+.rz--modern .rz-list li::marker {
+  color: var(--rz-accent);
 }
 
 @media print {

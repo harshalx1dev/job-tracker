@@ -26,12 +26,6 @@ export function ResumeDocument({
   const design = normalizeDesign(rawDesign);
   const b = content.basics;
   const sections = visibleSections(content, design);
-  const side: ResumeSectionKey[] =
-    design.template === "column"
-      ? ["skills", "education", "certifications"]
-      : [];
-  const main = sections.filter((s) => !side.includes(s));
-  const aside = sections.filter((s) => side.includes(s));
   const center = design.headerAlign === "center";
 
   const style = {
@@ -117,19 +111,12 @@ export function ResumeDocument({
         )}
       </header>
 
-      <div className={aside.length ? "rz-body rz-split" : "rz-body"}>
+      <div className="rz-body">
         <div className="rz-main">
-          {main.map((key) => (
+          {sections.map((key) => (
             <Section key={key} sectionKey={key} content={content} ctx={ctx} />
           ))}
         </div>
-        {aside.length > 0 && (
-          <aside className="rz-aside">
-            {aside.map((key) => (
-              <Section key={key} sectionKey={key} content={content} ctx={ctx} />
-            ))}
-          </aside>
-        )}
       </div>
     </article>
   );
@@ -352,10 +339,12 @@ function Body({
                   <div className="rz-left">
                     <span className="rz-title">
                       {e.title}
-                      {e.company && e.title ? "," : ""}
+                      {e.company && e.title ? (
+                        <span className="rz-comma">,</span>
+                      ) : null}
                     </span>{" "}
                     {e.company && (
-                      <em className="rz-org">
+                      <em className="rz-org rz-sub">
                         <Maybe url={e.url} ctx={ctx}>
                           {e.company}
                         </Maybe>
@@ -394,12 +383,14 @@ function Body({
                       <Maybe url={p.url} ctx={ctx}>
                         {p.name}
                       </Maybe>
-                      {sub && inline ? "," : ""}
+                      {sub && inline ? (
+                        <span className="rz-comma">,</span>
+                      ) : null}
                     </span>
                     {sub && inline && (
                       <>
                         {" "}
-                        <em className="rz-org">
+                        <em className="rz-org rz-sub">
                           <Rich text={sub} ctx={ctx} />
                         </em>
                       </>

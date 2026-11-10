@@ -63,7 +63,16 @@ const fontIds = RESUME_FONTS.map((f) => f.id) as [ResumeFont, ...ResumeFont[]];
  */
 export const designSchema = z.object({
   template: z
-    .enum(["professional", "classic", "column", "compact"])
+    .preprocess(
+      // Retired templates map onto the two that remain.
+      (v) =>
+        v === "classic"
+          ? "modern"
+          : v === "column" || v === "compact"
+            ? "professional"
+            : v,
+      z.enum(["professional", "modern"]),
+    )
     .catch("professional"),
   pageSize: z.enum(["A4", "Letter"]).catch("A4"),
   font: z
@@ -148,60 +157,24 @@ export const TEMPLATES: {
     },
   },
   {
-    id: "classic",
-    label: "Classic",
-    note: "Serif type, left aligned, thin rules",
+    id: "modern",
+    label: "Modern",
+    note: "Left header, accent headline, light rules",
     preset: {
-      font: "source-serif",
-      fontSize: 10.5,
-      lineHeight: 1.4,
-      margin: 18,
-      sectionGap: 6,
+      font: "inter",
+      fontSize: 10,
+      lineHeight: 1.42,
+      margin: 15,
+      sectionGap: 4.5,
       headerAlign: "left",
       contactStyle: "dots",
       headingCase: "upper",
       headingRule: "thin",
       datePosition: "right",
       subtitle: "below",
-      accentOn: ["name", "headings"],
-    },
-  },
-  {
-    id: "column",
-    label: "Column",
-    note: "Skills, education and certifications in a side column",
-    preset: {
-      font: "inter",
-      fontSize: 10,
-      lineHeight: 1.4,
-      margin: 14,
-      sectionGap: 5,
-      headerAlign: "left",
-      contactStyle: "bars",
-      headingCase: "upper",
-      headingRule: "thin",
-      datePosition: "below",
-      subtitle: "below",
-      accentOn: ["name", "headings", "icons", "links"],
-    },
-  },
-  {
-    id: "compact",
-    label: "Compact",
-    note: "Tight spacing to fit more on a page",
-    preset: {
-      font: "source-sans",
-      fontSize: 9.5,
-      lineHeight: 1.25,
-      margin: 10,
-      sectionGap: 3.5,
-      headerAlign: "left",
-      contactStyle: "bars",
-      headingCase: "upper",
-      headingRule: "thin",
-      datePosition: "right",
-      subtitle: "inline",
-      accentOn: ["headings", "rule"],
+      dateFormat: "Mon YYYY",
+      accent: "#1f2937",
+      accentOn: ["headings"],
     },
   },
 ];

@@ -607,10 +607,6 @@ function DesignPanel({
             );
           })}
         </ul>
-        <p className="mt-2 text-xs text-muted-foreground">
-          In the Column template, skills, education and certifications sit in
-          the side column.
-        </p>
       </Group>
     </div>
   );
