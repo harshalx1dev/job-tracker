@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -42,15 +43,18 @@ export function UserMenu({ user }: { user: CurrentUser }) {
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" className="w-56">
-        <DropdownMenuLabel className="flex items-center gap-2">
-          {user.role === "admin" ? (
-            <>
-              <ShieldCheck className="size-3.5 text-primary" /> Admin
-            </>
-          ) : (
-            "Signed in"
-          )}
-        </DropdownMenuLabel>
+        {/* Base UI requires a menu label to sit inside a group. */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex items-center gap-2">
+            {user.role === "admin" ? (
+              <>
+                <ShieldCheck className="size-3.5 text-primary" /> Admin
+              </>
+            ) : (
+              "Signed in"
+            )}
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {user.role === "admin" && (
           <DropdownMenuItem onClick={() => router.push("/app/admin")}>
