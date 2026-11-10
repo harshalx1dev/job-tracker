@@ -39,6 +39,25 @@ describe("normalizeSkill / matchQuestions", () => {
     );
     expect(matchQuestions([a, b, c], [])).toEqual([]);
   });
+
+  it("brings implied skills in and keeps other technologies out", () => {
+    const js = q({ topic: "JavaScript", skills: ["javascript"] });
+    const aemPerf = q({ topic: "AEM", skills: ["aem", "performance"] });
+    const vitals = q({ topic: "Performance & SEO", skills: ["performance"] });
+    const tsGenerics = q({
+      topic: "TypeScript",
+      skills: ["typescript", "react"],
+    });
+    const picked = matchQuestions(
+      [js, aemPerf, vitals, tsGenerics],
+      ["React", "Performance"],
+    ).map((x) => x.id);
+    expect(picked).toEqual([js.id, vitals.id]);
+    // EDS roles get AEM questions too.
+    expect(matchQuestions([aemPerf], ["Edge Delivery Services"])).toEqual([
+      aemPerf,
+    ]);
+  });
 });
 
 describe("buildCrash", () => {

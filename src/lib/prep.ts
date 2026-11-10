@@ -48,6 +48,22 @@ const SYNONYMS: Record<string, string> = {
   golang: "go",
   css3: "css",
   html5: "html",
+  "adobe experience manager": "aem",
+  "aem as a cloud service": "aem",
+  aemaacs: "aem",
+  "edge delivery services": "eds",
+  "edge delivery": "eds",
+  "aem eds": "eds",
+  franklin: "eds",
+  helix: "eds",
+  sightly: "htl",
+  scss: "sass",
+  "react router": "react router",
+  "react-router": "react router",
+  "redux toolkit": "redux",
+  rtk: "redux",
+  a11y: "accessibility",
+  wcag: "accessibility",
   "system design": "system design",
   "frontend system design": "system design",
   "front-end": "frontend",
@@ -59,18 +75,65 @@ export function normalizeSkill(raw: string) {
   return SYNONYMS[s] ?? s;
 }
 
-/** Questions whose skills or topic overlap the job's skills. */
+/** Skills a job implies without listing them (a React role is also a JavaScript role). */
+const IMPLIES: Record<string, string[]> = {
+  react: ["javascript", "html", "css"],
+  "next.js": ["react", "javascript", "html", "css"],
+  typescript: ["javascript"],
+  vue: ["javascript", "html", "css"],
+  angular: ["typescript", "javascript", "html", "css"],
+  eds: ["aem", "javascript", "html", "css"],
+  aem: ["htl"],
+  frontend: ["javascript", "html", "css"],
+};
+
+/**
+ * A question about one technology belongs to jobs with that technology: an AEM
+ * Lighthouse question tagged "performance" shouldn't land in a React role.
+ * Topics not listed here (Performance & SEO, Accessibility, System Design, ...)
+ * are general and match on their skills alone.
+ */
+const TOPIC_GATE: Record<string, string> = {
+  aem: "aem",
+  eds: "eds",
+  react: "react",
+  "next.js": "next.js",
+  javascript: "javascript",
+  typescript: "typescript",
+  html: "html",
+  css: "css",
+};
+
+/** The job's skills plus everything they imply. */
+export function expandSkills(jobSkills: string[]) {
+  const out = new Set(jobSkills.map(normalizeSkill).filter(Boolean));
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const s of [...out])
+      for (const extra of IMPLIES[s] ?? [])
+        if (!out.has(extra)) {
+          out.add(extra);
+          changed = true;
+        }
+  }
+  return out;
+}
+
+/** Questions whose skills or topic overlap the job's skills (implied ones included). */
 export function matchQuestions<Q extends BankQuestion>(
   questions: Q[],
   jobSkills: string[],
 ): Q[] {
-  const wanted = new Set(jobSkills.map(normalizeSkill).filter(Boolean));
+  const wanted = expandSkills(jobSkills);
   if (wanted.size === 0) return [];
-  return questions.filter(
-    (q) =>
-      q.skills.some((s) => wanted.has(normalizeSkill(s))) ||
-      wanted.has(normalizeSkill(q.topic)),
-  );
+  return questions.filter((q) => {
+    const topic = normalizeSkill(q.topic);
+    const gate = TOPIC_GATE[topic];
+    if (gate && !wanted.has(gate)) return false;
+    return (
+      wanted.has(topic) || q.skills.some((s) => wanted.has(normalizeSkill(s)))
+    );
+  });
 }
 
 const WEIGHT: Record<Priority, number> = { P1: 3, P2: 2, P3: 1 };

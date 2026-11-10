@@ -51,3 +51,6 @@ next-env.d.ts
 # local tooling
 /.claude/
 /.taste-skill/
+
+# Private question bank built from personal sources (never commit: this repo is public)
+data/private/

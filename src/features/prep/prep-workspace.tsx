@@ -26,6 +26,7 @@ import {
   setPlanVisibility,
   setProgress,
 } from "@/server/prep/actions";
+import { MarkdownAnswer } from "@/components/markdown-answer";
 
 type State = "done" | "confident" | "revise";
 type Item = PlanView["items"][number];
@@ -293,9 +294,7 @@ function QuestionRow({
       </div>
       {open && (
         <div className="mt-3 ml-10 space-y-3">
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-            {item.answer}
-          </p>
+          <MarkdownAnswer>{item.answer}</MarkdownAnswer>
           {item.references.length > 0 && (
             <ul className="space-y-0.5 text-xs">
               {item.references.map((r) => (
@@ -410,9 +409,9 @@ function FocusMode({
             {item.question}
           </h2>
           {revealed ? (
-            <p className="mt-8 leading-relaxed whitespace-pre-wrap text-foreground/90">
+            <MarkdownAnswer className="mt-8 text-base text-foreground/90">
               {item.answer}
-            </p>
+            </MarkdownAnswer>
           ) : (
             <Button
               variant="outline"

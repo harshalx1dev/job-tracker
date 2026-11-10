@@ -173,9 +173,11 @@ something else, note the step number.
 
 ## 9. Interview prep (job drawer → Interview prep; sidebar → Interview prep)
 
-> The bank currently holds a **24-question sample** (React, JavaScript, TypeScript, Next.js, CSS,
-> performance, testing, Node.js, system design), only so you can see how prep works. Your own question
-> bank replaces it later (section 10.2).
+> The bank holds **your 673 questions** (JavaScript, React, AEM, CSS, EDS, HTML, Performance & SEO,
+> Next.js, REST & Auth, TypeScript, Accessibility, System Design, Behavioral), merged from the
+> knowledge-base repo, dev-docs and your Word notes. The file is `data/private/question-bank.json`
+> (git-ignored: this repo is public). Plans built before the import are empty: open the job and
+> **Rebuild from current skills**.
 
 - [ ] Open a job whose skills include e.g. React, JavaScript or TypeScript → **Interview prep** →
   **Build prep plans** → *"N questions matched this job"*.
