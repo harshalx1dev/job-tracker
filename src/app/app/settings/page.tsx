@@ -65,8 +65,8 @@ async function SettingsLoader() {
       </Section>
 
       <Section
-        title="Writing model"
-        description="The Gemini model that writes your outreach and answers. Only models your key can use."
+        title="AI model"
+        description="The Gemini model behind every AI feature. Only models your key can use."
       >
         {/* Its own boundary: listing models calls Google, the rest of the page shouldn't wait. */}
         <Suspense fallback={<Skeleton className="h-44 rounded-xl" />}>

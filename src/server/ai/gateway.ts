@@ -10,8 +10,12 @@ import { open } from "./crypto";
 import { AiError, toAiError } from "./errors";
 import { limitVerdict, type KeySource } from "./limits";
 
-/** Free-tier friendly alias that follows Google's newest Flash model. Override with GEMINI_MODEL. */
-export const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+/**
+ * The fallback model when a user hasn't picked one in Settings: a pinned Flash
+ * version that answers reliably on free keys (the "-latest" aliases are often
+ * overloaded). Override with GEMINI_MODEL.
+ */
+export const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 
 export type AiFeature =
   | "parse_resume"
@@ -22,11 +26,8 @@ export type AiFeature =
   | "embed"
   | "test_key";
 
-/** Features that write prose for the user; they use the model picked in Settings. */
-const DRAFT_FEATURES: readonly AiFeature[] = ["outreach", "answer"];
-
-async function modelFor(userId: string, feature: AiFeature) {
-  if (!DRAFT_FEATURES.includes(feature)) return MODEL;
+/** The model picked in Settings (used for every AI feature), else the fallback. */
+export async function modelFor(userId: string) {
   const row = await db.query.aiSettings.findFirst({
     where: eq(aiSettings.userId, userId),
     columns: { draftModel: true },
@@ -111,7 +112,7 @@ export async function generateStructured<S extends z.ZodType>(opts: {
   const { apiKey, source } = await resolveKey(opts.user);
   await checkLimit(opts.user.id, source);
   const google = createGoogleGenerativeAI({ apiKey });
-  const model = await modelFor(opts.user.id, opts.feature);
+  const model = await modelFor(opts.user.id);
 
   try {
     const result = await generateText({

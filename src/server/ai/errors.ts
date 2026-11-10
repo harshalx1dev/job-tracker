@@ -54,7 +54,7 @@ export function toAiError(err: unknown, chosenModel = false): AiError {
       return new AiError(
         "FAILED",
         chosenModel
-          ? "Your writing model isn't available to your key any more. Pick another in Settings."
+          ? "Your chosen AI model isn't available to your key any more. Pick another in Settings."
           : "The AI model isn't available to this key.",
       );
     }

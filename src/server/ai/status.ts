@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/server/db";
 import { aiCredentials } from "@/server/db/schema";
 import type { CurrentUser } from "@/server/session";
-import { MODEL, usageToday } from "./gateway";
+import { modelFor, usageToday } from "./gateway";
 import { LIMITS } from "./limits";
 
 export type AiStatus = {
@@ -32,6 +32,6 @@ export async function getAiStatus(user: CurrentUser): Promise<AiStatus> {
     adminKeyAvailable,
     usedToday: await usageToday(user.id),
     limitPerDay: LIMITS[source ?? "user"].perDay,
-    model: MODEL,
+    model: await modelFor(user.id),
   };
 }

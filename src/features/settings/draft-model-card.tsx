@@ -17,7 +17,7 @@ import type { ModelPicker } from "@/server/ai/models";
 const DEFAULT = "default";
 
 /**
- * Picks the model for outreach and answer drafts, from the models the user's
+ * Picks the model for every AI feature, from the models the user's
  * own key offers. Each pick is tested with one tiny call before it is saved;
  * models the key can't use are marked and disabled.
  */
@@ -32,7 +32,8 @@ export function DraftModelCard({ picker }: { picker: ModelPicker }) {
   if (picker.state === "error") {
     return (
       <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-        Couldn&rsquo;t load the models for your key right now, so drafts use{" "}
+        Couldn&rsquo;t load the models for your key right now, so AI features
+        use{" "}
         <span className="font-mono text-foreground">{picker.defaultModel}</span>
         . Reload the page to try again.
       </p>
@@ -80,8 +81,8 @@ function Picker({
       }
       toast.success(
         next === DEFAULT
-          ? "Drafts use the default model"
-          : `Drafts now use ${labelOf(next)}`,
+          ? "AI features use the default model"
+          : `AI features now use ${labelOf(next)}`,
       );
     });
   }
@@ -90,12 +91,11 @@ function Picker({
     <div className="space-y-3 rounded-xl border p-4">
       <div>
         <label className="sr-only" htmlFor="draft-model">
-          Writing model
+          AI model
         </label>
         <p className="text-xs text-muted-foreground">
-          Used for outreach drafts and application answers. Resume parsing, job
-          import and match scores stay on the default for steady results.{" "}
-          {options.length} models offered by your key
+          Used for every AI feature: resume parsing, job import, match scores,
+          outreach and answers. {options.length} models offered by your key
           {usable < options.length ? `, ${usable} usable` : ""}.
         </p>
       </div>
