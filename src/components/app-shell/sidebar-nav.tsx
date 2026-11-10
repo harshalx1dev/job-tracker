@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -71,9 +71,22 @@ function NavList({ active }: { active: string | undefined }) {
         ) : (
           <Link key={item.href} href={item.href} className={cls}>
             {inner}
+            <PendingSpinner />
           </Link>
         );
       })}
     </nav>
+  );
+}
+
+/** Shown on the clicked link while its page loads; fades in late so instant navigations show nothing. */
+function PendingSpinner() {
+  const { pending } = useLinkStatus();
+  if (!pending) return null;
+  return (
+    <span
+      aria-hidden
+      className="relative ml-auto size-3 animate-spin rounded-full border-[1.5px] border-current border-r-transparent text-muted-foreground opacity-0 [animation:spin_.7s_linear_infinite,fade-in_.2s_ease-out_.12s_forwards]"
+    />
   );
 }

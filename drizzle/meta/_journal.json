@@ -29,6 +29,13 @@
       "when": 1794100327535,
       "tag": "0003_resumes_writing_prep",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794291983954,
+      "tag": "0004_ai_settings",
+      "breakpoints": true
     }
   ]
 }

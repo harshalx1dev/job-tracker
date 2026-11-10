@@ -1,12 +1,16 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { AuthForm } from "@/components/auth/auth-form";
+import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in";
 
 export const metadata: Metadata = { title: "Create account" };
 
 export default function SignupPage() {
   return (
     <>
+      <Suspense>
+        <RedirectIfSignedIn />
+      </Suspense>
       <h1 className="text-xl font-semibold tracking-tight">
         Create your account
       </h1>

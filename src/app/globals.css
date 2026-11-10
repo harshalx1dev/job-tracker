@@ -201,3 +201,9 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+@keyframes fade-in {
+  to {
+    opacity: 1;
+  }
+}

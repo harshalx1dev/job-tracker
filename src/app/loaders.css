@@ -1,0 +1,127 @@
+/* Signed-out loaders: the entry intro (entry-intro.tsx) and the column wipe (public-transition.tsx). */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: var(--background);
+  color: var(--foreground);
+  pointer-events: none;
+  clip-path: inset(0 0 0 0);
+  animation: intro-lift 0.7s cubic-bezier(0.7, 0, 0.2, 1) 1.15s forwards;
+}
+.intro__glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    40% 45% at 50% 50%,
+    color-mix(in oklab, var(--primary) 18%, transparent),
+    transparent
+  );
+  opacity: 0;
+  animation: fade-in 0.8s ease-out 0.1s forwards;
+}
+.intro__brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  animation: intro-brand-out 0.5s cubic-bezier(0.7, 0, 0.2, 1) 1.1s forwards;
+}
+.intro__mark rect {
+  transform-box: fill-box;
+  transform-origin: top;
+  transform: scaleY(0);
+  animation: intro-grow 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.intro__mark rect:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.intro__mark rect:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.intro__mark rect:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.intro__name {
+  display: block;
+  overflow: hidden;
+  font-size: 2.25rem;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+.intro__name > span {
+  display: block;
+  transform: translateY(105%);
+  animation: intro-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.35s forwards;
+}
+@keyframes intro-grow {
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes intro-rise {
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes intro-brand-out {
+  to {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+@keyframes intro-lift {
+  to {
+    clip-path: inset(0 0 100% 0);
+    visibility: hidden;
+  }
+}
+
+.wipe-panel {
+  height: 100%;
+  transform: translateY(100%);
+  background: color-mix(in oklab, var(--foreground) 7%, var(--background));
+}
+.wipe-panel--accent {
+  background: var(--primary);
+}
+.eq-bars {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  height: 28px;
+}
+.eq-bars i {
+  width: 7px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--primary-foreground);
+  transform-origin: top;
+  animation: eq 0.9s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+.eq-bars i:nth-child(1) {
+  opacity: 0.55;
+  animation-delay: -0.3s;
+}
+.eq-bars i:nth-child(3) {
+  opacity: 0.55;
+  animation-delay: -0.6s;
+}
+@keyframes eq {
+  from {
+    transform: scaleY(0.35);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro {
+    display: none;
+  }
+}

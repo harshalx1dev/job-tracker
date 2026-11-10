@@ -25,6 +25,20 @@ test("sign up, add a job, see it on the board and in the list", async ({
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
 
+  // With email configured, sign-up asks to confirm the address first; .test
+  // addresses are created confirmed in development, so sign in straight away.
+  const inbox = page.getByText("Check your inbox");
+  await Promise.race([
+    page.waitForURL("**/app/jobs", { timeout: 60_000 }),
+    inbox.waitFor({ timeout: 60_000 }),
+  ]);
+  if (await inbox.isVisible()) {
+    await page.goto("/login");
+    await page.waitForLoadState("networkidle");
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+  }
   await page.waitForURL("**/app/jobs", { timeout: 60_000 });
   await expect(page.getByRole("heading", { name: "Jobs" })).toBeVisible();
   await expect(

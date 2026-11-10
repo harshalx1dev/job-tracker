@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Bookmark } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { EntryIntro } from "@/components/entry-intro";
 import { HeroBoard } from "@/components/landing/hero-board";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { PrepTabs } from "@/components/landing/prep-tabs";
@@ -101,6 +102,7 @@ const LIST_ROWS = [
 export default function Landing() {
   return (
     <div className="lp contents">
+      <EntryIntro />
       <LandingNav />
       <main>
         {/* 1 · Hero (centred): the claim, one fact, then the board itself */}

@@ -48,6 +48,14 @@ something else, note the step number.
   - Other users see a form: paste a Gemini key → **Test and save**. A wrong key shows
     *"Gemini rejected this API key"*; a good one shows *"Gemini key connected •••• 1234"*.
 
+### 2.1b Writing model
+- [ ] **Writing model** lists only the Gemini text models your key offers (Pro, Flash, Flash-Lite).
+- [ ] Pick a Pro model on a free key → *"Your key can't use …"*; it's then greyed out as
+  *not available on your key*.
+- [ ] Pick a Flash model → *"Checking … with your key"*, then *"Drafts now use …"*. Outreach (7) and
+  answers (8) use it; parsing, job import and match scores stay on the default.
+- [ ] Replacing or removing the key resets the choice to **Default**.
+
 ### 2.2 Pipeline stages
 - [ ] Rename a stage (click its name, type, Enter) → the board column renames.
 - [ ] Click a stage's dot → pick a colour.

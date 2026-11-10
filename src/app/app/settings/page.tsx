@@ -5,6 +5,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusManager } from "@/features/settings/status-manager";
 import { AiKeyCard } from "@/features/settings/ai-key-card";
 import { DeleteAccount } from "@/features/settings/delete-account";
+import { DraftModelCard } from "@/features/settings/draft-model-card";
+import { getModelPicker } from "@/server/ai/models";
 import { getAiStatus } from "@/server/ai/status";
 import { listStatuses } from "@/server/jobs/statuses";
 import { requireUser } from "@/server/session";
@@ -63,6 +65,16 @@ async function SettingsLoader() {
       </Section>
 
       <Section
+        title="Writing model"
+        description="The Gemini model that writes your outreach and answers. Only models your key can use."
+      >
+        {/* Its own boundary: listing models calls Google, the rest of the page shouldn't wait. */}
+        <Suspense fallback={<Skeleton className="h-44 rounded-xl" />}>
+          <DraftModelLoader />
+        </Suspense>
+      </Section>
+
+      <Section
         title="Delete account"
         description="Removes your data from Trackr for good."
       >
@@ -70,6 +82,11 @@ async function SettingsLoader() {
       </Section>
     </>
   );
+}
+
+async function DraftModelLoader() {
+  const user = await requireUser();
+  return <DraftModelCard picker={await getModelPicker(user)} />;
 }
 
 function Section({

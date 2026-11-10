@@ -44,6 +44,13 @@ export async function sendEmail(opts: {
   text: string;
   link: string;
 }) {
+  // The reserved .test domain (RFC 2606) can never receive mail: test and e2e
+  // accounts use it. Sending would only bounce back to the sender's inbox.
+  if (/\.test$/i.test(opts.to.trim())) {
+    if (process.env.NODE_ENV !== "production")
+      console.info(`[email] not sent to test address ${opts.to}: ${opts.link}`);
+    return;
+  }
   try {
     if (emailTransport === "smtp") {
       await smtp().sendMail({

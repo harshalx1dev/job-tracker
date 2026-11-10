@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/server/db";
-import { aiCredentials } from "@/server/db/schema";
+import { aiCredentials, aiSettings } from "@/server/db/schema";
 import { requireUser } from "@/server/session";
 import { lastFour, seal } from "./crypto";
 import { toAiError, type AiResult } from "./errors";
@@ -59,6 +59,8 @@ export async function saveAiKey(
     .insert(aiCredentials)
     .values({ userId: user.id, ...values })
     .onConflictDoUpdate({ target: aiCredentials.userId, set: values });
+  // A new key can be on a different plan: start the model choice over.
+  await db.delete(aiSettings).where(eq(aiSettings.userId, user.id));
   refresh();
   return { ok: true, data: { last4: values.last4 } };
 }
@@ -66,6 +68,7 @@ export async function saveAiKey(
 export async function removeAiKey(): Promise<AiResult<null>> {
   const user = await requireUser();
   await db.delete(aiCredentials).where(eq(aiCredentials.userId, user.id));
+  await db.delete(aiSettings).where(eq(aiSettings.userId, user.id));
   refresh();
   return { ok: true, data: null };
 }

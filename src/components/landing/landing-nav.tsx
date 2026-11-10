@@ -5,6 +5,16 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/logo";
 
+function SectionLink({ href, label }: { href: string; label: string }) {
+  // A hash on this page is a plain jump; a link back to the landing page is a
+  // client navigation (so the page change gets its transition, not a reload).
+  return href.startsWith("#") ? (
+    <a href={href}>{label}</a>
+  ) : (
+    <Link href={href}>{label}</Link>
+  );
+}
+
 const LINKS = [
   { href: "#board", label: "Board" },
   { href: "#resumes", label: "Resumes" },
@@ -12,7 +22,12 @@ const LINKS = [
   { href: "#prep", label: "Prep" },
 ];
 
-export function LandingNav() {
+/**
+ * The site header. On the landing page its links jump to sections; elsewhere
+ * (sign-in, sign-up) they lead back to those sections on the landing page.
+ */
+export function LandingNav({ onLanding = true }: { onLanding?: boolean }) {
+  const base = onLanding ? "" : "/";
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -30,9 +45,7 @@ export function LandingNav() {
         </Link>
         <nav className="lp-nav__links" aria-label="Main">
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href}>
-              {l.label}
-            </a>
+            <SectionLink key={l.href} href={base + l.href} label={l.label} />
           ))}
         </nav>
         <div className="lp-nav__end">
@@ -58,9 +71,7 @@ export function LandingNav() {
         // Full-screen sheet; any tap on a row closes it.
         <div className="lp-sheet" onClick={() => setOpen(false)}>
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href}>
-              {l.label}
-            </a>
+            <SectionLink key={l.href} href={base + l.href} label={l.label} />
           ))}
           <Link href="/login">Sign in</Link>
           <Link href="/signup" className="lp-btn lp-btn--primary">

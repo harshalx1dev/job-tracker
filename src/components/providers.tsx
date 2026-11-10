@@ -6,6 +6,8 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeLab } from "@/components/theme-lab";
+import { RouteProgress } from "@/components/route-progress";
+import { PublicTransition } from "@/components/public-transition";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -22,6 +24,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       >
         <NuqsAdapter>
           <TooltipProvider>
+            <RouteProgress />
+            <PublicTransition />
             {children}
             <Toaster position="bottom-center" />
             {process.env.NEXT_PUBLIC_THEME_LAB !== "off" && <ThemeLab />}

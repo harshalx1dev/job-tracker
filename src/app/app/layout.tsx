@@ -6,6 +6,7 @@ import { SidebarNav } from "@/components/app-shell/sidebar-nav";
 import { CommandMenu } from "@/components/app-shell/command-menu";
 import { UserMenu } from "@/components/app-shell/user-menu";
 import { MobileNav } from "@/components/app-shell/mobile-nav";
+import { PageTransition } from "@/components/app-shell/page-transition";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/server/session";
 
@@ -50,7 +51,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Suspense>
           }
         />
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
     </div>
   );

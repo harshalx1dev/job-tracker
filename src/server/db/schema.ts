@@ -215,6 +215,22 @@ export const aiCredentials = pgTable("ai_credentials", {
   updatedAt: updatedAt(),
 });
 
+/**
+ * Per-user AI choices: the model for outreach and answer drafts, and what test
+ * calls found about each model for the current key. Cleared when the key changes.
+ */
+export const aiSettings = pgTable("ai_settings", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  draftModel: text("draft_model"),
+  modelAccess: jsonb("model_access")
+    .$type<Record<string, "ok" | "blocked">>()
+    .notNull()
+    .default({}),
+  updatedAt: updatedAt(),
+});
+
 /** One row per AI call: the usage log and the rate limiter's source of truth. */
 export const aiUsage = pgTable(
   "ai_usage",

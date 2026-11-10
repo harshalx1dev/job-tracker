@@ -4,7 +4,7 @@ import { embed, generateText, Output } from "ai";
 import { and, count, eq, gte } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "@/server/db";
-import { aiCredentials, aiUsage } from "@/server/db/schema";
+import { aiCredentials, aiSettings, aiUsage } from "@/server/db/schema";
 import type { CurrentUser } from "@/server/session";
 import { open } from "./crypto";
 import { AiError, toAiError } from "./errors";
@@ -21,6 +21,18 @@ export type AiFeature =
   | "answer"
   | "embed"
   | "test_key";
+
+/** Features that write prose for the user; they use the model picked in Settings. */
+const DRAFT_FEATURES: readonly AiFeature[] = ["outreach", "answer"];
+
+async function modelFor(userId: string, feature: AiFeature) {
+  if (!DRAFT_FEATURES.includes(feature)) return MODEL;
+  const row = await db.query.aiSettings.findFirst({
+    where: eq(aiSettings.userId, userId),
+    columns: { draftModel: true },
+  });
+  return row?.draftModel || MODEL;
+}
 
 export const EMBEDDING_MODEL = "gemini-embedding-001";
 export const EMBEDDING_DIMS = 768;
@@ -99,10 +111,11 @@ export async function generateStructured<S extends z.ZodType>(opts: {
   const { apiKey, source } = await resolveKey(opts.user);
   await checkLimit(opts.user.id, source);
   const google = createGoogleGenerativeAI({ apiKey });
+  const model = await modelFor(opts.user.id, opts.feature);
 
   try {
     const result = await generateText({
-      model: google(MODEL),
+      model: google(model),
       output: Output.object({ schema: opts.schema }),
       system: opts.system,
       prompt: opts.prompt,
@@ -113,19 +126,19 @@ export async function generateStructured<S extends z.ZodType>(opts: {
       userId: opts.user.id,
       feature: opts.feature,
       keySource: source,
-      model: MODEL,
+      model,
       ok: true,
       inputTokens: result.usage.inputTokens ?? null,
       outputTokens: result.usage.outputTokens ?? null,
     });
     return result.output as z.infer<S>;
   } catch (err) {
-    const e = toAiError(err);
+    const e = toAiError(err, model !== MODEL);
     await logUsage({
       userId: opts.user.id,
       feature: opts.feature,
       keySource: source,
-      model: MODEL,
+      model,
       ok: false,
       error: e.code,
     });

@@ -3,6 +3,7 @@ import { Host_Grotesk, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { themeLabBootScript } from "@/components/theme-lab";
 import "./globals.css";
+import "./loaders.css";
 import "./themes.css";
 
 // Dealt pairing: Host Grotesk for display and text, JetBrains Mono for figures and code.

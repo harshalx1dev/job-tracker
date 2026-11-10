@@ -24,7 +24,7 @@ export type AiResult<T> =
   { ok: true; data: T } | { ok: false; code: AiErrorCode; error: string };
 
 /** Maps SDK/provider errors to a code and a plain message. Never leaks the key or raw payloads. */
-export function toAiError(err: unknown): AiError {
+export function toAiError(err: unknown, chosenModel = false): AiError {
   if (err instanceof AiError) return err;
   const inner = RetryError.isInstance(err) ? err.lastError : err;
 
@@ -45,6 +45,17 @@ export function toAiError(err: unknown): AiError {
       return new AiError(
         "INVALID_KEY",
         "Gemini rejected this API key. Check it in Settings.",
+      );
+    }
+    if (
+      status === 404 ||
+      (chosenModel && status === 429 && /limit:\s*0\b/.test(body))
+    ) {
+      return new AiError(
+        "FAILED",
+        chosenModel
+          ? "Your writing model isn't available to your key any more. Pick another in Settings."
+          : "The AI model isn't available to this key.",
       );
     }
     if (status === 429) {

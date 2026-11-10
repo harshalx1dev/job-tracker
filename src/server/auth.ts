@@ -32,6 +32,15 @@ const socialProviders = {
 
 const firstName = (name: string) => name.split(" ")[0] || "there";
 
+/**
+ * Outside production, addresses on the reserved .test domain (RFC 2606: no mail
+ * can reach them) are created already confirmed, so local and e2e test accounts
+ * work without an inbox. Real addresses always confirm by email.
+ */
+const isTestAddress = (email: string) =>
+  process.env.NODE_ENV !== "production" &&
+  email.toLowerCase().endsWith(".test");
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -98,6 +107,7 @@ If you didn't sign up, ignore this email.`,
         before: async (u) => ({
           data: {
             ...u,
+            ...(isTestAddress(u.email) ? { emailVerified: true } : {}),
             role: adminEmails.includes(u.email.toLowerCase())
               ? "admin"
               : "user",
