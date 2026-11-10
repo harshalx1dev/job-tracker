@@ -6,6 +6,8 @@ import type { z } from "zod";
 import { db } from "@/server/db";
 import { aiCredentials, aiSettings, aiUsage } from "@/server/db/schema";
 import type { CurrentUser } from "@/server/session";
+import { modelSchema } from "@/lib/ai-schema";
+import { prefersDefaultTemperature } from "@/lib/ai-models";
 import { open } from "./crypto";
 import { AiError, toAiError } from "./errors";
 import { limitVerdict, type KeySource } from "./limits";
@@ -117,10 +119,14 @@ export async function generateStructured<S extends z.ZodType>(opts: {
   try {
     const result = await generateText({
       model: google(model),
-      output: Output.object({ schema: opts.schema }),
+      // Limit-free schema for Gemini; limits are applied on the way back (lib/ai-schema).
+      output: Output.object({ schema: modelSchema(opts.schema) }),
       system: opts.system,
       prompt: opts.prompt,
-      temperature: opts.temperature ?? 0.2,
+      // Gemini 3+ keep Google's default temperature; older models use the feature's.
+      temperature: prefersDefaultTemperature(model)
+        ? undefined
+        : (opts.temperature ?? 0.2),
       maxRetries: 2,
     });
     await logUsage({
@@ -134,7 +140,7 @@ export async function generateStructured<S extends z.ZodType>(opts: {
     });
     return result.output as z.infer<S>;
   } catch (err) {
-    const e = toAiError(err, model !== MODEL);
+    const e = toAiError(err, model !== MODEL, `${opts.feature} on ${model}`);
     await logUsage({
       userId: opts.user.id,
       feature: opts.feature,

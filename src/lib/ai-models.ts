@@ -81,3 +81,14 @@ export function classifyModelError(status: number, body: string): ModelAccess {
   if (status === 429 && /limit:\s*0\b/.test(body)) return "blocked";
   return "retry";
 }
+
+/**
+ * Google advises keeping Gemini 3 and newer at their default temperature
+ * (lower values can cause looping and weaker output). True for those models
+ * and for the "-latest" aliases, which point at them.
+ */
+export function prefersDefaultTemperature(id: string) {
+  if (/^gemini-(pro|flash|flash-lite)-latest$/.test(id)) return true;
+  const major = Number(/^gemini-(\d+)/.exec(id)?.[1]);
+  return Number.isFinite(major) && major >= 3;
+}

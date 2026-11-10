@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   classifyModelError,
+  prefersDefaultTemperature,
   isDraftModelId,
   pickDraftModels,
 } from "./ai-models";
@@ -103,5 +104,14 @@ describe("classifyModelError", () => {
     expect(classifyModelError(429, "limit: 15, model: gemini-3.5-flash")).toBe(
       "retry",
     );
+  });
+});
+
+describe("prefersDefaultTemperature", () => {
+  it("is true for Gemini 3+ and the latest aliases, false for older models", () => {
+    expect(prefersDefaultTemperature("gemini-3.5-flash")).toBe(true);
+    expect(prefersDefaultTemperature("gemini-3-flash-preview")).toBe(true);
+    expect(prefersDefaultTemperature("gemini-flash-latest")).toBe(true);
+    expect(prefersDefaultTemperature("gemini-2.5-flash")).toBe(false);
   });
 });

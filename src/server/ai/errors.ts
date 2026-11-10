@@ -23,8 +23,31 @@ export class AiError extends Error {
 export type AiResult<T> =
   { ok: true; data: T } | { ok: false; code: AiErrorCode; error: string };
 
-/** Maps SDK/provider errors to a code and a plain message. Never leaks the key or raw payloads. */
-export function toAiError(err: unknown, chosenModel = false): AiError {
+/** Google's own error message from a failed call (never the key or our payload). */
+function providerMessage(body: string | undefined) {
+  if (!body) return "";
+  try {
+    const parsed = JSON.parse(body) as {
+      error?: { status?: string; message?: string };
+    };
+    return [parsed.error?.status, parsed.error?.message]
+      .filter(Boolean)
+      .join(": ")
+      .slice(0, 300);
+  } catch {
+    return body.slice(0, 300);
+  }
+}
+
+/**
+ * Maps SDK/provider errors to a code and a plain message. `context` (feature and
+ * model, e.g. "parse_resume on gemini-3.5-flash") goes into the server log.
+ */
+export function toAiError(
+  err: unknown,
+  chosenModel = false,
+  context = "",
+): AiError {
   if (err instanceof AiError) return err;
   const inner = RetryError.isInstance(err) ? err.lastError : err;
 
@@ -64,6 +87,16 @@ export function toAiError(err: unknown, chosenModel = false): AiError {
         "Gemini's rate limit for this key was reached (free keys allow a few requests a minute). Wait a minute and try again.",
       );
     }
+    if (status === 400 && /invalid[_ ]argument/.test(body)) {
+      console.error(
+        `[ai] rejected request${context ? ` (${context})` : ""}:`,
+        providerMessage(inner.responseBody),
+      );
+      return new AiError(
+        "FAILED",
+        "Gemini rejected this request. Try again, or pick a different AI model in Settings.",
+      );
+    }
     if (status === 413 || /too large|token count/.test(body)) {
       return new AiError(
         "TOO_LARGE",
@@ -81,14 +114,17 @@ export function toAiError(err: unknown, chosenModel = false): AiError {
       "Couldn't reach Gemini from the server. Check the network (see README: NODE_USE_SYSTEM_CA).",
     );
   }
-  // Unrecognised: log the shape (never the key or payloads) so it can be mapped.
+  // Unrecognised: log what failed and Google's reason (never the key or our payload).
   const e = inner as
     { name?: string; statusCode?: number; message?: string } | undefined;
   console.error(
-    "[ai] unmapped error:",
+    `[ai] unmapped error${context ? ` (${context})` : ""}:`,
     e?.name,
     e?.statusCode ?? "",
     String(e?.message ?? inner).slice(0, 200),
+    APICallError.isInstance(inner)
+      ? `| provider: ${providerMessage(inner.responseBody)}`
+      : "",
   );
   return new AiError("FAILED", "The AI request failed. Try again in a moment.");
 }
