@@ -13,6 +13,14 @@ const nextConfig: NextConfig = {
     "puppeteer-core",
     "@sparticuz/chromium",
   ],
+  // The PDF route launches @sparticuz/chromium, whose compressed browser lives in
+  // bin/ and is loaded at runtime, so file tracing doesn't see it. Without this,
+  // Vercel deploys the route without Chromium and every export fails.
+  outputFileTracingIncludes: {
+    "/api/resumes/\\[id\\]/pdf": [
+      "./node_modules/@sparticuz/chromium/bin/**/*",
+    ],
+  },
   experimental: {
     // Resume uploads go through a server action (files up to 4 MB).
     serverActions: { bodySizeLimit: "5mb" },

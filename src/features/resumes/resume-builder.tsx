@@ -17,11 +17,21 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { JobMatch } from "@/lib/ai-schemas";
 import type { Profile } from "@/lib/profile";
 import {
+  ACCENT_TARGETS,
+  normalizeDesign,
   RESUME_ACCENTS,
+  RESUME_FONTS,
   RESUME_SECTIONS,
   TEMPLATES,
   type ResumeDesign,
@@ -43,7 +53,9 @@ export function ResumeBuilder({
   const router = useRouter();
   const [title, setTitle] = useState(resume.title);
   const [content, setContent] = useState<Profile>(resume.content);
-  const [design, setDesign] = useState<ResumeDesign>(resume.design);
+  const [design, setDesign] = useState<ResumeDesign>(() =>
+    normalizeDesign(resume.design),
+  );
   const [tab, setTab] = useState<"content" | "design">("content");
   const [save, setSave] = useState<SaveState>("saved");
   const [epoch, setEpoch] = useState(0);
@@ -269,72 +281,283 @@ function DesignPanel({
   moveSection: (i: number, dir: -1 | 1) => void;
   toggleHidden: (key: ResumeDesign["order"][number]) => void;
 }) {
+  const fontItems = RESUME_FONTS.map((f) => ({ value: f.id, label: f.label }));
+  const toggleTarget = (id: ResumeDesign["accentOn"][number]) =>
+    setD({
+      accentOn: design.accentOn.includes(id)
+        ? design.accentOn.filter((t) => t !== id)
+        : [...design.accentOn, id],
+    });
+  const accent = design.accent.toLowerCase();
+  const customAccent = !(RESUME_ACCENTS as readonly string[]).includes(accent);
+
   return (
-    <>
+    <div className="space-y-6">
       <Group title="Template">
-        <div className="grid gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {TEMPLATES.map((t) => (
             <button
               key={t.id}
               type="button"
               aria-pressed={design.template === t.id}
-              onClick={() => setD({ template: t.id })}
+              onClick={() => setD({ template: t.id, ...t.preset })}
               className={cn(
-                "flex items-center justify-between rounded-xl border p-3 text-left transition-colors hover:bg-surface",
+                "flex items-start justify-between gap-2 rounded-lg border p-2.5 text-left transition-colors hover:bg-surface",
                 design.template === t.id && "border-foreground/40 bg-surface",
               )}
             >
               <span>
                 <span className="block text-sm font-medium">{t.label}</span>
-                <span className="block text-xs text-muted-foreground">
+                <span className="block text-[11px] leading-snug text-muted-foreground">
                   {t.note}
                 </span>
               </span>
-              {design.template === t.id && <Check className="size-4" />}
-            </button>
-          ))}
-        </div>
-      </Group>
-
-      <Group title="Accent">
-        <div className="flex flex-wrap gap-2">
-          {RESUME_ACCENTS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              aria-label={`Accent ${c}`}
-              aria-pressed={design.accent === c}
-              onClick={() => setD({ accent: c })}
-              className={cn(
-                "grid size-8 place-items-center rounded-full ring-offset-2 ring-offset-background transition-shadow",
-                design.accent === c && "ring-2 ring-foreground",
+              {design.template === t.id && (
+                <Check className="mt-0.5 size-3.5 shrink-0" />
               )}
-              style={{ background: c }}
-            >
-              {design.accent === c && <Check className="size-3.5 text-white" />}
             </button>
           ))}
         </div>
       </Group>
 
-      <Group title="Type and spacing">
-        <div className="grid grid-cols-2 gap-2">
-          <Segmented
-            value={design.font}
-            options={[
-              { value: "serif", label: "Serif" },
-              { value: "sans", label: "Sans" },
-            ]}
-            onChange={(font) => setD({ font })}
+      <Group title="Page">
+        <div className="space-y-2.5">
+          <Field label="Page size">
+            <Segmented
+              value={design.pageSize}
+              options={[
+                { value: "A4", label: "A4" },
+                { value: "Letter", label: "Letter" },
+              ]}
+              onChange={(pageSize) => setD({ pageSize })}
+            />
+          </Field>
+          <Field label="Date format">
+            <Segmented
+              value={design.dateFormat}
+              options={[
+                { value: "MM/YYYY", label: "MM/YYYY" },
+                { value: "Mon YYYY", label: "Mon YYYY" },
+                { value: "YYYY", label: "YYYY" },
+              ]}
+              onChange={(dateFormat) => setD({ dateFormat })}
+            />
+          </Field>
+        </div>
+      </Group>
+
+      <Group title="Font">
+        <div className="space-y-2.5">
+          <Field label="Family">
+            <Select
+              items={fontItems}
+              value={design.font}
+              onValueChange={(v) =>
+                v && setD({ font: v as ResumeDesign["font"] })
+              }
+            >
+              <SelectTrigger size="sm" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {fontItems.map((f) => (
+                  <SelectItem key={f.value} value={f.value}>
+                    {f.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Slider
+            label="Size"
+            value={design.fontSize}
+            min={8.5}
+            max={12.5}
+            step={0.5}
+            unit="pt"
+            onChange={(fontSize) => setD({ fontSize })}
           />
-          <Segmented
-            value={design.density}
-            options={[
-              { value: "comfortable", label: "Roomy" },
-              { value: "compact", label: "Tight" },
-            ]}
-            onChange={(density) => setD({ density })}
+          <Slider
+            label="Line height"
+            value={design.lineHeight}
+            min={1.1}
+            max={1.7}
+            step={0.05}
+            onChange={(lineHeight) => setD({ lineHeight })}
           />
+        </div>
+      </Group>
+
+      <Group title="Spacing">
+        <div className="space-y-2.5">
+          <Slider
+            label="Margin"
+            value={design.margin}
+            min={8}
+            max={25}
+            step={1}
+            unit="mm"
+            onChange={(margin) => setD({ margin })}
+          />
+          <Slider
+            label="Section spacing"
+            value={design.sectionGap}
+            min={2}
+            max={10}
+            step={0.5}
+            unit="mm"
+            onChange={(sectionGap) => setD({ sectionGap })}
+          />
+        </div>
+      </Group>
+
+      <Group title="Header">
+        <div className="space-y-2.5">
+          <Field label="Alignment">
+            <Segmented
+              value={design.headerAlign}
+              options={[
+                { value: "left", label: "Left" },
+                { value: "center", label: "Center" },
+              ]}
+              onChange={(headerAlign) => setD({ headerAlign })}
+            />
+          </Field>
+          <Field label="Contact details">
+            <Segmented
+              value={design.contactStyle}
+              options={[
+                { value: "icons", label: "Icons" },
+                { value: "dots", label: "Dots" },
+                { value: "bars", label: "Bars" },
+              ]}
+              onChange={(contactStyle) => setD({ contactStyle })}
+            />
+          </Field>
+        </div>
+      </Group>
+
+      <Group title="Section headings">
+        <div className="space-y-2.5">
+          <Field label="Case">
+            <Segmented
+              value={design.headingCase}
+              options={[
+                { value: "upper", label: "Uppercase" },
+                { value: "title", label: "Title" },
+              ]}
+              onChange={(headingCase) => setD({ headingCase })}
+            />
+          </Field>
+          <Field label="Line">
+            <Segmented
+              value={design.headingRule}
+              options={[
+                { value: "none", label: "None" },
+                { value: "thin", label: "Thin" },
+                { value: "thick", label: "Thick" },
+              ]}
+              onChange={(headingRule) => setD({ headingRule })}
+            />
+          </Field>
+        </div>
+      </Group>
+
+      <Group title="Entries">
+        <div className="space-y-2.5">
+          <Field label="Date & location">
+            <Segmented
+              value={design.datePosition}
+              options={[
+                { value: "right", label: "Right" },
+                { value: "below", label: "Below" },
+              ]}
+              onChange={(datePosition) => setD({ datePosition })}
+            />
+          </Field>
+          <Field label="Subtitle">
+            <Segmented
+              value={design.subtitle}
+              options={[
+                { value: "inline", label: "Same line" },
+                { value: "below", label: "Below" },
+              ]}
+              onChange={(subtitle) => setD({ subtitle })}
+            />
+          </Field>
+        </div>
+      </Group>
+
+      <Group title="Links">
+        <div className="flex flex-wrap gap-1.5">
+          <Chip
+            active={design.linkUnderline}
+            onClick={() => setD({ linkUnderline: !design.linkUnderline })}
+          >
+            Underline
+          </Chip>
+          <Chip
+            active={design.linkIcon}
+            onClick={() => setD({ linkIcon: !design.linkIcon })}
+          >
+            Link icon
+          </Chip>
+        </div>
+      </Group>
+
+      <Group title="Colour">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {RESUME_ACCENTS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={`Accent ${c}`}
+                aria-pressed={accent === c}
+                onClick={() => setD({ accent: c })}
+                className={cn(
+                  "grid size-6 place-items-center rounded-full ring-offset-2 ring-offset-background transition-shadow",
+                  accent === c && "ring-2 ring-foreground",
+                )}
+                style={{ background: c }}
+              >
+                {accent === c && <Check className="size-3 text-white" />}
+              </button>
+            ))}
+            <label
+              className={cn(
+                "relative size-6 cursor-pointer overflow-hidden rounded-full ring-offset-2 ring-offset-background",
+                customAccent && "ring-2 ring-foreground",
+              )}
+              style={{
+                background: customAccent
+                  ? design.accent
+                  : "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+              }}
+            >
+              <span className="sr-only">Custom accent colour</span>
+              <input
+                type="color"
+                value={design.accent}
+                onChange={(e) => setD({ accent: e.target.value })}
+                className="absolute inset-0 size-full cursor-pointer opacity-0"
+              />
+            </label>
+          </div>
+          <div>
+            <p className="mb-1.5 text-xs text-muted-foreground">Apply to</p>
+            <div className="flex flex-wrap gap-1.5">
+              {ACCENT_TARGETS.map((t) => (
+                <Chip
+                  key={t.id}
+                  active={design.accentOn.includes(t.id)}
+                  onClick={() => toggleTarget(t.id)}
+                >
+                  {t.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
         </div>
       </Group>
 
@@ -389,7 +612,85 @@ function DesignPanel({
           the side column.
         </p>
       </Group>
-    </>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid grid-cols-[6.5rem_1fr] items-center gap-2">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function Slider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  unit = "",
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  unit?: string;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <label className="grid grid-cols-[6.5rem_1fr_3rem] items-center gap-2">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="h-4 w-full cursor-pointer accent-foreground"
+      />
+      <span className="text-right text-xs tabular-nums">
+        {value}
+        {unit}
+      </span>
+    </label>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        "h-7 rounded-md border px-2.5 text-xs transition-colors",
+        active
+          ? "border-foreground bg-foreground text-background"
+          : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
   );
 }
 

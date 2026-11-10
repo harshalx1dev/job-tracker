@@ -1,198 +1,257 @@
 /*
- * Resume templates. Scoped by the rz- prefix. A4 page at 96dpi: 794 × 1123 px.
- * Print: @page has no margin; the page's own padding is the margin, so screen and PDF match.
+ * Resume document styles, scoped by the rz- prefix.
+ * The page element only has horizontal padding (the margin); the vertical margins
+ * come from @page when printing and from the page card padding in the preview.
  */
 
 .rz-page {
-  --rz-accent: #1f2937;
-  --rz-ink: #16181d;
-  --rz-muted: #5b616e;
-  --rz-rule: #d9dce1;
-  --rz-pad: 15mm;
-  --rz-gap: 4.2mm;
-  --rz-size: 10.2pt;
-  width: 210mm;
-  min-height: 297mm;
-  padding: var(--rz-pad);
-  background: #ffffff;
+  --rz-ink: #111111;
+  --rz-rule-c: #111111;
+  --rz-accent: #111827;
+  --rz-size: 10.5pt;
+  --rz-lh: 1.35;
+  --rz-margin: 14mm;
+  --rz-gap: 5mm;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 var(--rz-margin);
+  background: #fff;
   color: var(--rz-ink);
+  font-family: var(--rz-font), "Helvetica Neue", Arial, sans-serif;
   font-size: var(--rz-size);
-  line-height: 1.42;
-  font-family: var(--font-host), "Helvetica Neue", Arial, sans-serif;
+  line-height: var(--rz-lh);
   text-rendering: optimizeLegibility;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
-.rz--serif {
-  font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+.rz-page *,
+.rz-page *::before,
+.rz-page *::after {
+  box-sizing: border-box;
 }
-.rz--d-compact,
-.rz--compact {
-  --rz-pad: 11.5mm;
-  --rz-gap: 3mm;
-  --rz-size: 9.4pt;
-  line-height: 1.34;
+.rz-page :is(h1, h2, p, ul) {
+  margin: 0;
 }
 
+/* ---- header ---- */
 .rz-head {
   margin-bottom: var(--rz-gap);
 }
-.rz-name {
-  font-size: 2.15em;
-  line-height: 1.05;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  color: var(--rz-ink);
-}
-.rz-headline {
-  margin-top: 1.2mm;
-  font-size: 1.12em;
-  color: var(--rz-accent);
-  font-weight: 500;
-}
-.rz-contact {
-  margin-top: 2mm;
+.rz-titleline {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 3.2mm;
-  color: var(--rz-muted);
-  font-size: 0.92em;
+  align-items: baseline;
+  column-gap: 0.6em;
 }
-.rz-contact span + span::before {
-  content: "·";
-  margin-right: 3.2mm;
-  color: var(--rz-rule);
+.rz-name {
+  font-size: 1.9em;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.rz-headline {
+  font-size: 1.05em;
+  font-weight: 400;
+}
+.rz-center .rz-titleline,
+.rz-center .rz-contact {
+  justify-content: center;
+}
+.rz-center .rz-head {
+  text-align: center;
+}
+.rz-left .rz-titleline {
+  flex-direction: column;
+  align-items: flex-start;
+  row-gap: 0.1em;
+}
+.rz-contact {
+  margin-top: 0.5mm;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.9em;
+  font-size: 0.95em;
+}
+.rz-contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  white-space: nowrap;
+}
+.rz-sep {
+  margin-left: -0.45em;
+  margin-right: 0.1em;
+  white-space: pre;
+}
+.rz-ico {
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  flex: none;
+}
+.rz-linkico {
+  /* Tailwind's base makes svg block-level; keep the icon in the text line. */
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-left: 0.2em;
+  vertical-align: baseline;
+  position: relative;
+  top: 0.04em;
 }
 
+/* ---- sections ---- */
 .rz-section {
   margin-top: var(--rz-gap);
-  break-inside: auto;
+}
+.rz-body > .rz-main > .rz-section:first-child {
+  margin-top: 0;
 }
 .rz-h2 {
-  font-size: 0.82em;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--rz-accent);
-  padding-bottom: 1.2mm;
-  margin-bottom: 2mm;
-  border-bottom: 0.6pt solid var(--rz-rule);
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  margin-bottom: 1.6mm;
   break-after: avoid;
 }
-.rz-item {
-  margin-bottom: 2.6mm;
-  break-inside: avoid;
+.rz-case-upper .rz-h2 {
+  text-transform: uppercase;
 }
-.rz-item:last-child {
-  margin-bottom: 0;
+.rz-rule-thin .rz-h2 {
+  padding-bottom: 0.8mm;
+  border-bottom: 0.5pt solid var(--rz-rule-c);
+}
+.rz-rule-thick .rz-h2 {
+  padding-bottom: 0.8mm;
+  border-bottom: 1.5pt solid var(--rz-rule-c);
+}
+
+.rz-entry {
+  margin-top: 2.2mm;
+}
+.rz-h2 + .rz-entry,
+.rz-h2 + .rz-text,
+.rz-h2 + .rz-skills {
+  margin-top: 0;
 }
 .rz-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 4mm;
+  break-after: avoid;
+  break-inside: avoid;
 }
-.rz-h3 {
-  font-size: 1.02em;
-  font-weight: 600;
+.rz-left {
+  min-width: 0;
 }
-.rz-at {
-  font-weight: 400;
-  color: var(--rz-muted);
-}
-.rz-date {
+.rz-right {
   flex: none;
-  font-size: 0.9em;
-  color: var(--rz-muted);
-  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
 }
-.rz-meta {
-  color: var(--rz-muted);
-  font-size: 0.92em;
+.rz-title {
+  font-weight: 700;
+}
+.rz-org {
+  font-style: italic;
+}
+.rz-below {
+  margin-top: 0;
 }
 .rz-text {
-  margin-top: 0.6mm;
+  margin-top: 0.8mm;
+  break-inside: avoid;
 }
 .rz-list {
-  margin-top: 1mm;
-  padding-left: 4.2mm;
+  margin-top: 0.8mm;
+  padding-left: 4.6mm;
   list-style: disc;
 }
 .rz-list li {
-  margin-top: 0.6mm;
-  padding-left: 0.6mm;
-}
-.rz-list li::marker {
-  color: var(--rz-accent);
-}
-.rz-list--plain {
-  list-style: none;
-  padding-left: 0;
+  margin-top: 0.5mm;
+  padding-left: 0.4mm;
+  break-inside: avoid;
 }
 .rz-skills {
   display: grid;
-  gap: 1mm;
+  gap: 0.6mm;
 }
-.rz-skills > div {
+.rz-skill {
+  break-inside: avoid;
+}
+.rz-certs {
   display: grid;
-  grid-template-columns: 30mm 1fr;
-  gap: 3mm;
+  gap: 0.6mm;
 }
-.rz-skills dt {
+
+/* ---- links ---- */
+.rz-a {
+  color: inherit;
+  text-decoration: none;
+}
+.rz-u .rz-a {
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+  text-decoration-thickness: 0.5pt;
+}
+
+/* ---- accent colour, only where chosen ---- */
+.rz-on-name .rz-name {
+  color: var(--rz-accent);
+}
+.rz-on-headings .rz-h2 {
+  color: var(--rz-accent);
+}
+.rz-on-rule {
+  --rz-rule-c: var(--rz-accent);
+}
+.rz-on-icons .rz-ico {
+  color: var(--rz-accent);
+}
+.rz-on-links .rz-a {
+  color: var(--rz-accent);
+}
+.rz-on-dates .rz-dates {
+  color: var(--rz-accent);
+}
+.rz-on-titles .rz-title {
+  color: var(--rz-accent);
+}
+
+/* ---- templates ---- */
+.rz--classic .rz-name {
+  font-size: 2.1em;
   font-weight: 600;
 }
-
-/* Classic: headings get a little more air. */
-.rz--classic .rz-name {
-  font-size: 2.3em;
+.rz--compact .rz-name {
+  font-size: 1.7em;
 }
 
-/* Column: a narrow side column for skills, education and certifications. */
-.rz--column .rz-head {
-  padding-bottom: var(--rz-gap);
-  border-bottom: 1.6pt solid var(--rz-accent);
-}
-.rz-body--split {
+.rz-split {
   display: grid;
-  grid-template-columns: 1fr 55mm;
-  gap: 7mm;
+  grid-template-columns: minmax(0, 1fr) 56mm;
+  column-gap: 7mm;
+  align-items: start;
 }
-.rz--column .rz-aside .rz-skills > div {
-  grid-template-columns: 1fr;
-  gap: 0.4mm;
-  margin-bottom: 1.6mm;
+.rz-aside .rz-section:first-child {
+  margin-top: 0;
 }
-.rz--column .rz-aside .rz-row {
+.rz-aside .rz-row {
   flex-direction: column;
   gap: 0;
 }
-
-/* Compact: header on one line where it fits. */
-.rz--compact .rz-head {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: end;
-  column-gap: 6mm;
-}
-.rz--compact .rz-name {
-  font-size: 1.9em;
-}
-.rz--compact .rz-contact {
-  grid-column: 1 / -1;
+.rz-aside .rz-right {
+  text-align: left;
+  white-space: normal;
 }
 
 @media print {
-  @page {
-    size: A4;
-    margin: 0;
-  }
   html,
   body {
     margin: 0;
     padding: 0;
     background: #fff;
-  }
-  .rz-page {
-    box-shadow: none;
   }
 }

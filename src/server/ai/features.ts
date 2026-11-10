@@ -84,7 +84,7 @@ export async function parseResume(
         "Dates: YYYY-MM when the month is given, otherwise YYYY. A current role ends with 'Present'. Convert month names (Mar 2021 -> 2021-03).",
         "Highlights: each bullet as its own item, word for word, without the bullet symbol. Join a bullet that wraps onto the next line. Keep numbers and metrics exactly.",
         "Headline: the resume's own headline if it has one, otherwise the most recent job title.",
-        "Links: LinkedIn, GitHub, portfolio and similar, with a short label and the full URL as written (add https:// only if the scheme is missing).",
+        "Links: LinkedIn, GitHub, portfolio and similar. Take each address from the resume text or from the 'Links in the file' list at the end, which gives the real address behind clickable words like 'LinkedIn'; label it by its visible text or site. Copy addresses exactly; add https:// only to an address written without one (github.com/jane). Never build an address from a label: a link with no address in the file is left out. An email address that only appears as a mailto: link goes in email.",
         "Skills: keep the resume's own skill groups when it has them; otherwise group sensibly (Languages, Frameworks & Libraries, Tools & Platforms, Practices). No duplicates.",
         "Projects, education and certifications: only what is listed; empty lists when a section is missing.",
         "Anything not in the resume is an empty string or an empty list. Leave 'extra' empty.",

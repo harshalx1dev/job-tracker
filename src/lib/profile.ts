@@ -20,6 +20,7 @@ export const experienceSchema = z.object({
   company: text(120),
   title: text(120),
   location: text(120).describe("City or Remote; empty if unknown"),
+  url: text(300).describe("Company website; empty if none").optional(),
   start: text(20).describe("YYYY-MM or YYYY"),
   end: text(20).describe("YYYY-MM, YYYY or Present"),
   highlights: z
@@ -30,7 +31,17 @@ export const experienceSchema = z.object({
 
 export const projectSchema = z.object({
   name: text(120),
+  subtitle: text(200)
+    .describe(
+      "Short line under the name, e.g. client or context; empty if none",
+    )
+    .optional(),
   description: text(600),
+  highlights: z
+    .array(text(400))
+    .max(12)
+    .describe("Bullets, as written")
+    .optional(),
   tech: z.array(text(40)).max(20),
   url: text(300).describe("Empty if none"),
 });
@@ -41,10 +52,18 @@ export const educationSchema = z.object({
   field: text(160),
   start: text(20),
   end: text(20),
+  location: text(120).optional(),
+  details: z
+    .array(text(300))
+    .max(6)
+    .describe("Extra lines such as grade or honours")
+    .optional(),
 });
 
 export const skillGroupSchema = z.object({
-  group: text(60).describe("e.g. Languages, Frameworks, Tools"),
+  group: text(60).describe(
+    "e.g. Languages, Frameworks, Tools; empty when the resume lists skills without groups",
+  ),
   items: z.array(text(60)).max(40),
 });
 
@@ -52,6 +71,7 @@ export const certificationSchema = z.object({
   name: text(160),
   issuer: text(160),
   year: text(10),
+  url: text(300).describe("Certificate link; empty if none").optional(),
 });
 
 export const profileSchema = z.object({

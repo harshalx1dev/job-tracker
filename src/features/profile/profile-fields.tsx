@@ -90,11 +90,13 @@ export function ProfileFields({
       </Block>
 
       <Block id="summary" title="Summary">
-        <Textarea
-          rows={4}
-          value={profile.summary}
-          onChange={(e) => set("summary", e.target.value)}
-        />
+        <Field label="Text" hint="**bold**, *italic*, [text](https://link)">
+          <Textarea
+            rows={4}
+            value={profile.summary}
+            onChange={(e) => set("summary", e.target.value)}
+          />
+        </Field>
       </Block>
 
       <Block id="experience" title="Experience">
@@ -125,6 +127,13 @@ export function ProfileFields({
                   onChange={(e) => setX({ company: e.target.value })}
                 />
               </Field>
+              <Field label="Company link">
+                <TextInput
+                  value={x.url ?? ""}
+                  placeholder="https://"
+                  onChange={(e) => setX({ url: e.target.value })}
+                />
+              </Field>
               <Field label="Start" hint="YYYY-MM">
                 <TextInput
                   value={x.start}
@@ -145,11 +154,11 @@ export function ProfileFields({
               </Field>
               <Field
                 label="Highlights"
-                hint="One per line"
+                hint="One per line · **bold**, *italic*, [text](https://link)"
                 className="sm:col-span-2"
               >
                 <LinesInput
-                  value={x.highlights}
+                  value={x.highlights ?? []}
                   onChange={(highlights) => setX({ highlights })}
                 />
               </Field>
@@ -162,7 +171,14 @@ export function ProfileFields({
         <ListEditor
           items={profile.projects}
           onChange={(v) => set("projects", v)}
-          make={() => ({ name: "", description: "", tech: [], url: "" })}
+          make={() => ({
+            name: "",
+            subtitle: "",
+            description: "",
+            highlights: [],
+            tech: [],
+            url: "",
+          })}
           title={(x) => x.name}
           addLabel="Add project"
           render={(x, setX) => (
@@ -171,6 +187,13 @@ export function ProfileFields({
                 <TextInput
                   value={x.name}
                   onChange={(e) => setX({ name: e.target.value })}
+                />
+              </Field>
+              <Field label="Subtitle" className="sm:col-span-2">
+                <TextInput
+                  value={x.subtitle ?? ""}
+                  placeholder="Client, context or role"
+                  onChange={(e) => setX({ subtitle: e.target.value })}
                 />
               </Field>
               <Field label="Link">
@@ -191,11 +214,25 @@ export function ProfileFields({
                   onChange={(tech) => setX({ tech })}
                 />
               </Field>
-              <Field label="Description" className="sm:col-span-2">
+              <Field
+                label="Description"
+                hint="**bold**, *italic*, [text](https://link)"
+                className="sm:col-span-2"
+              >
                 <Textarea
                   rows={3}
                   value={x.description}
                   onChange={(e) => setX({ description: e.target.value })}
+                />
+              </Field>
+              <Field
+                label="Highlights"
+                hint="One per line · **bold**, *italic*, [text](https://link)"
+                className="sm:col-span-2"
+              >
+                <LinesInput
+                  value={x.highlights ?? []}
+                  onChange={(highlights) => setX({ highlights })}
                 />
               </Field>
             </>
@@ -213,6 +250,8 @@ export function ProfileFields({
             field: "",
             start: "",
             end: "",
+            location: "",
+            details: [],
           })}
           title={(x) => [x.degree, x.school].filter(Boolean).join(" · ")}
           addLabel="Add education"
@@ -236,6 +275,12 @@ export function ProfileFields({
                   onChange={(e) => setX({ field: e.target.value })}
                 />
               </Field>
+              <Field label="Location" className="sm:col-span-2">
+                <TextInput
+                  value={x.location ?? ""}
+                  onChange={(e) => setX({ location: e.target.value })}
+                />
+              </Field>
               <Field label="Start">
                 <TextInput
                   value={x.start}
@@ -246,6 +291,16 @@ export function ProfileFields({
                 <TextInput
                   value={x.end}
                   onChange={(e) => setX({ end: e.target.value })}
+                />
+              </Field>
+              <Field
+                label="Details"
+                hint="One per line, e.g. grade or honours"
+                className="sm:col-span-2"
+              >
+                <LinesInput
+                  value={x.details ?? []}
+                  onChange={(details) => setX({ details })}
                 />
               </Field>
             </>
@@ -262,10 +317,10 @@ export function ProfileFields({
           addLabel="Add skill group"
           render={(x, setX) => (
             <>
-              <Field label="Group">
+              <Field label="Group" hint="Leave empty for a plain list">
                 <TextInput
                   value={x.group}
-                  placeholder="Frameworks"
+                  placeholder="Frameworks (optional)"
                   onChange={(e) => setX({ group: e.target.value })}
                 />
               </Field>
@@ -285,7 +340,7 @@ export function ProfileFields({
         <ListEditor
           items={profile.certifications}
           onChange={(v) => set("certifications", v)}
-          make={() => ({ name: "", issuer: "", year: "" })}
+          make={() => ({ name: "", issuer: "", year: "", url: "" })}
           title={(x) => x.name}
           addLabel="Add certification"
           render={(x, setX) => (
@@ -306,6 +361,13 @@ export function ProfileFields({
                 <TextInput
                   value={x.year}
                   onChange={(e) => setX({ year: e.target.value })}
+                />
+              </Field>
+              <Field label="Link" className="sm:col-span-2">
+                <TextInput
+                  value={x.url ?? ""}
+                  placeholder="https://"
+                  onChange={(e) => setX({ url: e.target.value })}
                 />
               </Field>
             </>

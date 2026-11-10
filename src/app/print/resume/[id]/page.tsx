@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ResumeDocument } from "@/features/resumes/resume-document";
+import { normalizeDesign, pageSize } from "@/lib/resume";
 import { getResumeForPrint } from "@/server/resumes/queries";
 import { verifyPrintToken } from "@/server/resumes/print-token";
 import "@/features/resumes/resume.css";
@@ -37,5 +38,15 @@ async function PrintBody({
   if (!verifyPrintToken(id, t)) notFound();
   const resume = await getResumeForPrint(id);
   if (!resume) notFound();
-  return <ResumeDocument content={resume.content} design={resume.design} />;
+  const design = normalizeDesign(resume.design);
+  const size = pageSize(design);
+  return (
+    <>
+      {/* Chrome paints the page margins with the root background: keep it white
+          even when the app's dark theme is active. */}
+      <style>{`@page { size: ${size.css}; margin: ${design.margin}mm 0; }
+:root, html, body { background: #fff !important; color-scheme: light !important; }`}</style>
+      <ResumeDocument content={resume.content} design={design} />
+    </>
+  );
 }
