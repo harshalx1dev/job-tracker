@@ -87,6 +87,16 @@ export async function ensureAdmins(
     return { promoted: promoted.length, admin: "created" };
   }
 
+  // The admin address comes from the server's own settings, so it counts as
+  // confirmed, also when the admin signed up through the form before the
+  // bootstrap ran (that sign-up would otherwise wait for a confirmation email).
+  if (!existing.emailVerified) {
+    await db
+      .update(schema.user)
+      .set({ emailVerified: true })
+      .where(eq(schema.user.id, existing.id));
+  }
+
   // Existing account: (re)set its email+password login only when the password differs.
   const cred = await db.query.account.findFirst({
     where: and(

@@ -128,4 +128,20 @@ describe("ensureAdmins", () => {
     });
     expect(other?.role).toBe("admin");
   });
+
+  it("confirms the admin's email when they signed up through the form with the same password", async () => {
+    // The production case: the admin signs up before the bootstrap could run, so the
+    // account waits for a confirmation email; the bootstrap then finds the password unchanged.
+    await db
+      .update(schema.user)
+      .set({ emailVerified: false })
+      .where(eq(schema.user.email, ADMIN));
+    const r = await ensureAdmins(db, {
+      ADMIN_EMAILS: ADMIN,
+      ADMIN_PASSWORD: "second-pass-456",
+    });
+    expect(r.admin).toBe("unchanged");
+    const { user } = await credentialHash(ADMIN);
+    expect(user.emailVerified).toBe(true);
+  });
 });
