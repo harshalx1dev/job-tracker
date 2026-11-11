@@ -54,3 +54,6 @@ next-env.d.ts
 
 # Private question bank built from personal sources (never commit: this repo is public)
 data/private/
+
+# graphify knowledge graph
+graphify-out/
