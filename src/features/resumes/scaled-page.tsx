@@ -158,7 +158,11 @@ export function ScaledPage({
               >
                 <div
                   style={{
-                    height: contentH,
+                    // Stop at the next page's first unit, so its top lines don't show here too.
+                    height: Math.min(
+                      contentH,
+                      (starts[i + 1] ?? Infinity) - start,
+                    ),
                     overflow: "hidden",
                     position: "relative",
                   }}

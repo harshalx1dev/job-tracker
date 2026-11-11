@@ -39,7 +39,7 @@
 
 /* ---- header ---- */
 .rz-head {
-  margin-bottom: var(--rz-gap);
+  margin-bottom: calc(var(--rz-gap) * 1.25);
 }
 .rz-titleline {
   display: flex;
@@ -70,7 +70,8 @@
   row-gap: 0.1em;
 }
 .rz-contact {
-  margin-top: 0.25em;
+  margin-top: 0.7em;
+  row-gap: 0.2em;
   display: flex;
   flex-wrap: wrap;
   column-gap: 0.9em;
@@ -137,7 +138,7 @@
 }
 
 .rz-entry {
-  margin-top: 0.55em;
+  margin-top: 0.8em;
 }
 .rz-h2 + .rz-entry,
 .rz-h2 + .rz-text,
