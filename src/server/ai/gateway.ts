@@ -17,7 +17,7 @@ import { limitVerdict, type KeySource } from "./limits";
  * version that answers reliably on free keys (the "-latest" aliases are often
  * overloaded). Override with GEMINI_MODEL.
  */
-export const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+export const MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
 export type AiFeature =
   | "parse_resume"

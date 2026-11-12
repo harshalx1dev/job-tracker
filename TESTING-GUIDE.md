@@ -53,7 +53,7 @@ something else, note the step number.
 - [ ] Pick a Pro model on a free key → *"Your key can't use …"*; it's then greyed out as
   *not available on your key*.
 - [ ] Pick a Flash model → *"Checking … with your key"*, then *"AI features now use …"*. Every AI
-  feature uses it (parsing, import, match, outreach, answers). Default is `gemini-3.5-flash`.
+  feature uses it (parsing, import, match, outreach, answers). Default is `gemini-3.6-flash`.
 - [ ] Replacing or removing the key resets the choice to **Default**.
 
 ### 2.2 Pipeline stages
