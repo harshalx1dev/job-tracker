@@ -4,10 +4,15 @@ import { db } from "@/server/db";
 import { jobs } from "@/server/db/schema";
 import { sectionSize } from "@/lib/profile";
 import { getProfile } from "@/server/profile/queries";
+import { getBackground } from "@/server/profile/question-queries";
+import type { PromptProfile } from "@/lib/profile";
 import { AiError } from "./errors";
 
-/** The profile every writing feature needs; fails early with a useful message. */
-export async function requireProfile(userId: string) {
+/**
+ * The profile every writing feature needs, with the user's answers to
+ * "Questions for you" attached; fails early with a useful message.
+ */
+export async function requireProfile(userId: string): Promise<PromptProfile> {
   const { profile, saved } = await getProfile(userId);
   const filled =
     sectionSize(profile, "experience") +
@@ -19,7 +24,7 @@ export async function requireProfile(userId: string) {
       "Fill your profile first (upload your resume on the Profile page).",
     );
   }
-  return profile;
+  return { ...profile, background: await getBackground(userId) };
 }
 
 export async function jobContext(userId: string, jobId?: string | null) {

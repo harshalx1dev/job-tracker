@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { backgroundToPrompt, type BackgroundNote } from "@/lib/profile-questions";
 import { headingText, isHeadingLine, stripRichText } from "@/lib/rich-text";
 
 /**
@@ -214,6 +215,9 @@ export function stripPlainFields(p: Profile): Profile {
   };
 }
 
+/** The profile plus the user's answers to "Questions for you", as AI features read it. */
+export type PromptProfile = Profile & { background?: BackgroundNote[] };
+
 /** A highlight line for prompts: markup removed, sub-headings as "Name:". */
 const promptLine = (h: string) =>
   isHeadingLine(h)
@@ -221,7 +225,7 @@ const promptLine = (h: string) =>
     : `  - ${stripRichText(h)}`;
 
 /** Plain-text rendering of the profile for prompts (compact, no JSON noise). */
-export function profileToPrompt(p: Profile): string {
+export function profileToPrompt(p: PromptProfile): string {
   const lines: string[] = [];
   const b = p.basics;
   lines.push(
@@ -247,5 +251,7 @@ export function profileToPrompt(p: Profile): string {
   for (const c of p.certifications)
     lines.push(`Certification: ${c.name}, ${c.issuer} ${c.year}`);
   if (p.extra) lines.push(`Other context from the candidate: ${p.extra}`);
+  const background = backgroundToPrompt(p.background ?? []);
+  if (background) lines.push(background);
   return lines.join("\n");
 }

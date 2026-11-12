@@ -262,6 +262,37 @@ export const profiles = pgTable("profiles", {
   updatedAt: updatedAt(),
 });
 
+export const profileQuestionStatus = pgEnum("profile_question_status", [
+  "pending",
+  "answered",
+  "na", // not relevant to this person
+  "unsure", // no answer / don't know
+]);
+
+/**
+ * Questions the AI asked to learn more about a user's background, and what
+ * they said. Answered ones are added to the context every AI feature reads.
+ */
+export const profileQuestions = pgTable(
+  "profile_questions",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    question: text("question").notNull(),
+    /** What it is about: a role, project or topic. Empty when general. */
+    about: text("about"),
+    status: profileQuestionStatus("status").notNull().default("pending"),
+    answer: text("answer"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("profile_questions_user_idx").on(t.userId, t.status, t.createdAt),
+  ],
+);
+
 /** Uploaded resumes: extracted text and the parser's result, kept for review. */
 export const resumeUploads = pgTable(
   "resume_uploads",
@@ -479,3 +510,4 @@ export type OutreachMessage = typeof outreachMessages.$inferSelect;
 export type Answer = typeof answers.$inferSelect;
 export type PrepPlan = typeof prepPlans.$inferSelect;
 export type Question = typeof questions.$inferSelect;
+export type ProfileQuestion = typeof profileQuestions.$inferSelect;

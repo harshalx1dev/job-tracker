@@ -2,7 +2,9 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileEditor } from "@/features/profile/profile-editor";
+import { ProfileQuestions } from "@/features/profile/profile-questions";
 import { getAiStatus } from "@/server/ai/status";
+import { getProfileQuestions } from "@/server/profile/question-queries";
 import { getPendingUpload, getProfile } from "@/server/profile/queries";
 import { requireUser } from "@/server/session";
 
@@ -27,16 +29,23 @@ export default function ProfilePage() {
 
 async function ProfileLoader() {
   const user = await requireUser();
-  const [{ profile }, pending, ai] = await Promise.all([
+  const [{ profile }, pending, ai, questions] = await Promise.all([
     getProfile(user.id),
     getPendingUpload(user.id),
     getAiStatus(user),
+    getProfileQuestions(user.id),
   ]);
   return (
     <ProfileEditor
       initial={profile}
       pending={pending}
       aiReady={ai.source !== null}
+      // null: the questions table isn't there yet (migration pending); hide the section.
+      questions={
+        questions ? (
+          <ProfileQuestions initial={questions} aiReady={ai.source !== null} />
+        ) : null
+      }
     />
   );
 }

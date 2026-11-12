@@ -15,10 +15,13 @@ export function ProfileEditor({
   initial,
   pending,
   aiReady,
+  questions,
 }: {
   initial: Profile;
   pending: PendingUpload | null;
   aiReady: boolean;
+  /** The "Questions for you" section, shown after the form. It is not part of the profile being edited. */
+  questions?: React.ReactNode;
 }) {
   const [profile, setProfile] = useState(initial);
   const [syncedFrom, setSyncedFrom] = useState(initial);
@@ -47,13 +50,18 @@ export function ProfileEditor({
           {[
             ...PROFILE_SECTIONS,
             { key: "extra" as const, label: "Extra context" },
+            ...(questions
+              ? [{ key: "questions" as const, label: "Questions for you" }]
+              : []),
           ].map((s) => {
             const n =
               s.key === "extra"
                 ? profile.extra.trim()
                   ? 1
                   : 0
-                : sectionSize(profile, s.key);
+                : s.key === "questions"
+                  ? 0
+                  : sectionSize(profile, s.key);
             return (
               <li key={s.key}>
                 <a
@@ -61,12 +69,15 @@ export function ProfileEditor({
                   className="flex h-8 items-center justify-between rounded-lg px-2.5 text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
                 >
                   {s.label}
-                  <span
-                    className={cn(
-                      "size-1.5 rounded-full",
-                      n ? "bg-emerald-500" : "bg-foreground/15",
-                    )}
-                  />
+                  {/* A filled/empty dot says nothing useful about a list of questions. */}
+                  {s.key !== "questions" && (
+                    <span
+                      className={cn(
+                        "size-1.5 rounded-full",
+                        n ? "bg-emerald-500" : "bg-foreground/15",
+                      )}
+                    />
+                  )}
                 </a>
               </li>
             );
@@ -74,10 +85,16 @@ export function ProfileEditor({
         </ul>
       </nav>
 
-      <div key={epoch} className="min-w-0 space-y-10">
-        <ResumeUpload pending={pending} aiReady={aiReady} />
-
-        <ProfileFields profile={profile} onChange={setProfile} />
+      <div className="min-w-0 space-y-10">
+        {/* Re-keyed (reset) when server data is applied or changes are discarded. */}
+        <div key={`upload-${epoch}`}>
+          <ResumeUpload pending={pending} aiReady={aiReady} />
+        </div>
+        <div key={`fields-${epoch}`} className="space-y-10">
+          <ProfileFields profile={profile} onChange={setProfile} />
+        </div>
+        {/* Outside the keyed parts: discarding profile edits must not reset it. */}
+        {questions}
       </div>
 
       {/* Save bar: appears when there are unsaved changes. */}

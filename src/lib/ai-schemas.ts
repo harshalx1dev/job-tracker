@@ -29,6 +29,26 @@ export const jobImportSchema = z.object({
 
 export type JobImport = z.infer<typeof jobImportSchema>;
 
+/** Questions that fill gaps in a profile (the user answers, skips or says they don't know). */
+export const profileQuestionsSchema = z.object({
+  questions: z
+    .array(
+      z.object({
+        question: z
+          .string()
+          .max(300)
+          .describe("One specific question, addressed to the candidate as 'you'"),
+        about: z
+          .string()
+          .max(120)
+          .describe(
+            "The role, project or topic it concerns (e.g. 'DEPT Agency', 'Career goals'); empty if general",
+          ),
+      }),
+    )
+    .max(12),
+});
+
 /** How well the profile fits a job. Stored on the job as `match`. */
 export const jobMatchSchema = z.object({
   score: z.number().int().min(0).max(100).describe("Overall fit, 0 to 100"),

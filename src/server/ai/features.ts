@@ -2,13 +2,16 @@ import "server-only";
 import {
   jobImportSchema,
   jobMatchSchema,
+  profileQuestionsSchema,
   type JobImport,
 } from "@/lib/ai-schemas";
+import { MAX_QUESTION, type QuestionStatus } from "@/lib/profile-questions";
 import {
   profileSchema,
   profileToPrompt,
   stripPlainFields,
   type Profile,
+  type PromptProfile,
 } from "@/lib/profile";
 import type { CurrentUser } from "@/server/session";
 import { AiError } from "./errors";
@@ -136,7 +139,7 @@ export async function importJob(
 
 export async function matchJob(
   user: CurrentUser,
-  profile: Profile,
+  profile: PromptProfile,
   job: {
     company: string;
     title: string;
@@ -184,6 +187,55 @@ export async function matchJob(
   });
 }
 
+const STATUS_LABEL: Record<QuestionStatus, string> = {
+  pending: "not answered yet",
+  answered: "answered",
+  na: "marked not relevant",
+  unsure: "marked no idea",
+};
+
+/** Questions that would add the most to a profile; the user answers them one by one. */
+export async function generateProfileQuestions(
+  user: CurrentUser,
+  profile: PromptProfile,
+  asked: { question: string; status: QuestionStatus }[],
+  count: number,
+) {
+  const result = await generateStructured({
+    user,
+    feature: "profile_questions",
+    schema: profileQuestionsSchema,
+    system: [
+      "You help a job seeker complete their profile by asking what a good career coach would ask. The answers become background for writing their resume bullets, outreach messages and interview answers.",
+      "",
+      "Rules:",
+      rules([
+        `Ask at most ${count} questions, most valuable first, spread across the candidate's roles, projects and goals rather than all about one thing.`,
+        "Ask only about what the profile does not already say. Read all of it first, including every bullet and project.",
+        "Make each question specific to this person: name the actual role, project, company or technology (for example 'How many people used the DLPS portal, and what did it replace?'), never a generic question that would suit anyone.",
+        "Prefer questions whose answers make strong resume and interview material: numbers and scale (users, traffic, team size, time or money saved), what the candidate personally owned versus the team, a hard problem and how they solved it, a decision and its trade-off, the result, tools they used but did not list. A few can be about what they want next (target roles, what they enjoy).",
+        "One question each, answerable in a few sentences. No yes/no questions and no questions with several parts.",
+        "Never ask about age, gender, marital or family status, health, religion, ethnicity, nationality, or salary history.",
+        `Keep each question under ${MAX_QUESTION - 50} characters, addressed to the candidate as 'you'.`,
+        "about: the role, project or topic the question concerns, in a few words; empty if general.",
+        "The 'already asked' list holds questions the candidate has seen, with what they did. Never repeat or reword any of them, including ones they skipped or could not answer.",
+        "Never state facts about the candidate that are not in the profile; you only ask questions.",
+        "The profile and the list are inside <document> tags. " + DATA_RULE,
+      ]),
+    ].join("\n"),
+    prompt: [
+      `<document name="candidate">\n${profileToPrompt(profile)}\n</document>`,
+      `<document name="already asked">\n${
+        asked.length
+          ? asked.map((a) => `- ${a.question} (${STATUS_LABEL[a.status]})`).join("\n")
+          : "(none yet)"
+      }\n</document>`,
+    ].join("\n"),
+    temperature: 0.5,
+  });
+  return result.questions;
+}
+
 type JobContext = {
   company: string;
   title: string;
@@ -206,7 +258,7 @@ function jobBlock(job: JobContext) {
 
 export async function generateOutreach(
   user: CurrentUser,
-  profile: Profile,
+  profile: PromptProfile,
   job: JobContext,
   req: {
     channelLabel: string;
@@ -259,7 +311,7 @@ export async function generateOutreach(
 
 export async function draftAnswer(
   user: CurrentUser,
-  profile: Profile,
+  profile: PromptProfile,
   job: JobContext,
   req: {
     question: string;

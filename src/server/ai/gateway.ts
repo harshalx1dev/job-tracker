@@ -24,6 +24,7 @@ export type AiFeature =
   | "import_job"
   | "match_job"
   | "outreach"
+  | "profile_questions"
   | "answer"
   | "embed"
   | "test_key";

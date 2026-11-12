@@ -9,6 +9,7 @@ import { requireUser } from "@/server/session";
 import type { JobImport, JobMatch } from "@/lib/ai-schemas";
 import { sectionSize } from "@/lib/profile";
 import { getProfile } from "@/server/profile/queries";
+import { getBackground } from "@/server/profile/question-queries";
 import { AiError, toAiError, type AiResult } from "./errors";
 import { importJob, matchJob } from "./features";
 
@@ -52,7 +53,8 @@ export async function aiMatchJob(jobId: string): Promise<AiResult<JobMatch>> {
         "Add your experience or skills to your profile first (or upload your resume).",
       );
     }
-    const result = await matchJob(user, profile, job);
+    const background = await getBackground(user.id);
+    const result = await matchJob(user, { ...profile, background }, job);
     const match: JobMatch = { ...result, at: new Date().toISOString() };
     await db
       .update(jobs)

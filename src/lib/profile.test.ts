@@ -79,6 +79,22 @@ describe("highlight limit", () => {
   });
 });
 
+describe("profileToPrompt with background", () => {
+  it("adds the answers after the profile, and is unchanged without them", () => {
+    const p = emptyProfile();
+    p.basics.name = "Jane";
+    const plain = profileToPrompt(p);
+    expect(profileToPrompt({ ...p, background: [] })).toBe(plain);
+
+    const withNotes = profileToPrompt({
+      ...p,
+      background: [{ question: "Team size?", answer: "Six" }],
+    });
+    expect(withNotes.startsWith(plain)).toBe(true);
+    expect(withNotes).toContain("Q: Team size?\nA: Six");
+  });
+});
+
 describe("profileToPrompt", () => {
   it("shows plain words, with sub-headings as labels", () => {
     const p = emptyProfile();
