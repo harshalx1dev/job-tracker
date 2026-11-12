@@ -81,6 +81,16 @@ export const outreachRequestSchema = z.object({
 
 export type OutreachRequest = z.input<typeof outreachRequestSchema>;
 
+/** A draft to save, from the app or the Claude connector. */
+export const outreachSaveSchema = z.object({
+  channel: z.enum(CHANNELS.map((c) => c.id) as [string, ...string[]]),
+  tone: z.string().max(20),
+  jobId: z.string().optional(),
+  recipientName: z.string().trim().max(80).optional(),
+  subject: z.string().trim().max(200).optional(),
+  body: z.string().trim().min(1, "The message is empty").max(4000),
+});
+
 export const outreachDraftsSchema = z.object({
   variants: z
     .array(

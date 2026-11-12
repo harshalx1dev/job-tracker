@@ -82,12 +82,55 @@ export function MatchPanel({
     );
   }
 
+  return (
+    <MatchBody
+      match={match}
+      caption="Checked"
+      dim={pending}
+      action={
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          onClick={run}
+          disabled={pending}
+          aria-label="Check again"
+        >
+          {pending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+        </Button>
+      }
+    />
+  );
+}
+
+/** Claude's own assessment of the job (saved through the connector), shown beside Trackr's. */
+export function ClaudeMatchPanel({ match }: { match: JobMatch }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+        Claude&rsquo;s assessment
+      </p>
+      <MatchBody match={match} caption="Added" />
+    </div>
+  );
+}
+
+function MatchBody({
+  match,
+  caption,
+  action,
+  dim,
+}: {
+  match: JobMatch;
+  caption: string;
+  action?: React.ReactNode;
+  dim?: boolean;
+}) {
   const b = band(match.score);
   return (
     <div
       className={cn(
         "rounded-xl border p-4 transition-opacity",
-        pending && "opacity-60",
+        dim && "opacity-60",
       )}
     >
       <div className="flex items-start gap-4">
@@ -101,18 +144,10 @@ export function MatchPanel({
         <div className="min-w-0 flex-1">
           <p className="text-sm">{match.verdict}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Checked <RelativeTime date={match.at} />
+            {caption} <RelativeTime date={match.at} />
           </p>
         </div>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          onClick={run}
-          disabled={pending}
-          aria-label="Check again"
-        >
-          {pending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-        </Button>
+        {action}
       </div>
 
       {(match.matched.length > 0 || match.missing.length > 0) && (

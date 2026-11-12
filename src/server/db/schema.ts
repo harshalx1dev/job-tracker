@@ -141,6 +141,8 @@ export const jobs = pgTable(
     notes: text("notes"),
     /** Latest AI match result against the profile (see src/lib/ai-schemas.ts). */
     match: jsonb("match").$type<import("@/lib/ai-schemas").JobMatch>(),
+    /** A match assessment saved by Claude through the connector; kept apart from `match`. */
+    claudeMatch: jsonb("claude_match").$type<import("@/lib/ai-schemas").JobMatch>(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -249,6 +251,50 @@ export const aiUsage = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("ai_usage_user_time_idx").on(t.userId, t.createdAt)],
+);
+
+/* ───────────────────────── Claude connector (MCP) ───────────────────────── */
+
+/**
+ * Personal access tokens for the hosted MCP endpoint. Only a SHA-256 hash of
+ * the token is stored (the token itself is shown once); `prefix` identifies it
+ * in the UI. Scopes: "read", and "write" for tools that add data.
+ */
+export const mcpTokens = pgTable(
+  "mcp_tokens",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    prefix: text("prefix").notNull(),
+    scopes: text("scopes").array().notNull().default(["read"]),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("mcp_tokens_hash_idx").on(t.tokenHash),
+    index("mcp_tokens_user_idx").on(t.userId),
+  ],
+);
+
+/** One row per tool call: the rate limiter's source of truth and an audit trail. */
+export const mcpCalls = pgTable(
+  "mcp_calls",
+  {
+    id: id(),
+    tokenId: text("token_id")
+      .notNull()
+      .references(() => mcpTokens.id, { onDelete: "cascade" }),
+    tool: text("tool").notNull(),
+    ok: boolean("ok").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("mcp_calls_token_time_idx").on(t.tokenId, t.createdAt)],
 );
 
 /* ───────────────────────────── Profile ───────────────────────────── */
@@ -511,3 +557,4 @@ export type Answer = typeof answers.$inferSelect;
 export type PrepPlan = typeof prepPlans.$inferSelect;
 export type Question = typeof questions.$inferSelect;
 export type ProfileQuestion = typeof profileQuestions.$inferSelect;
+export type McpToken = typeof mcpTokens.$inferSelect;

@@ -7,6 +7,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/server/db";
 import { answers } from "@/server/db/schema";
+import { answerQuestion, answerSaveSchema } from "@/lib/answers";
 import { requireUser } from "@/server/session";
 import type { CurrentUser } from "@/server/session";
 import { jobContext, requireProfile } from "./context";
@@ -35,11 +36,7 @@ async function embedQuestion(user: CurrentUser, question: string) {
   return v;
 }
 
-const question = z
-  .string()
-  .trim()
-  .min(8, "Write out the full question")
-  .max(1000);
+const question = answerQuestion;
 
 export type SimilarAnswer = {
   id: string;
@@ -131,14 +128,7 @@ export async function draftAnswerAction(
   }
 }
 
-const saveSchema = z.object({
-  id: z.string().optional(),
-  question,
-  answer: z.string().trim().min(1, "The answer is empty").max(6000),
-  tags: z.array(z.string().trim().min(1).max(30)).max(12).default([]),
-  jobId: z.string().optional(),
-  wordLimit: z.number().int().min(20).max(2000).optional(),
-});
+const saveSchema = answerSaveSchema;
 
 /** Saves an answer. The question is embedded when a key is available; without one it still saves. */
 export async function saveAnswer(input: z.input<typeof saveSchema>) {

@@ -1,11 +1,12 @@
 "use server";
 
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { generateKeyBetween } from "fractional-indexing";
 import { db } from "@/server/db";
-import { jobEvents, jobs, statuses } from "@/server/db/schema";
+import { jobEvents, jobs } from "@/server/db/schema";
 import { requireUser } from "@/server/session";
+import { assertOwnStatus, insertJob, lastPositionIn } from "./service";
 import {
   jobInputSchema,
   moveJobSchema,
@@ -16,31 +17,6 @@ import {
 export type ActionResult<T = undefined> =
   | { ok: true; data: T }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
-
-async function assertOwnStatus(userId: string, statusId: string) {
-  const row = await db.query.statuses.findFirst({
-    where: and(eq(statuses.id, statusId), eq(statuses.userId, userId)),
-    columns: { id: true },
-  });
-  if (!row) throw new Error("Status not found");
-}
-
-async function lastPositionIn(userId: string, statusId: string) {
-  const rows = await db
-    .select({ position: jobs.position })
-    .from(jobs)
-    .where(
-      and(
-        eq(jobs.userId, userId),
-        eq(jobs.statusId, statusId),
-        isNull(jobs.archivedAt),
-      ),
-    );
-  return rows.reduce<string | null>(
-    (max, r) => (max === null || r.position > max ? r.position : max),
-    null,
-  );
-}
 
 export async function createJob(
   input: JobInput,
@@ -54,37 +30,8 @@ export async function createJob(
       fieldErrors: parsed.error.flatten().fieldErrors,
     };
   }
-  await assertOwnStatus(user.id, parsed.data.statusId);
   // New jobs go to the top of their column.
-  const first = await db
-    .select({ position: jobs.position })
-    .from(jobs)
-    .where(
-      and(
-        eq(jobs.userId, user.id),
-        eq(jobs.statusId, parsed.data.statusId),
-        isNull(jobs.archivedAt),
-      ),
-    );
-  const minPos = first.reduce<string | null>(
-    (min, r) => (min === null || r.position < min ? r.position : min),
-    null,
-  );
-
-  const [row] = await db
-    .insert(jobs)
-    .values({
-      ...parsed.data,
-      userId: user.id,
-      position: generateKeyBetween(null, minPos),
-    })
-    .returning({ id: jobs.id });
-  await db.insert(jobEvents).values({
-    jobId: row.id,
-    userId: user.id,
-    type: "created",
-    toStatusId: parsed.data.statusId,
-  });
+  const row = await insertJob(user.id, parsed.data);
   refresh();
   return { ok: true, data: { id: row.id } };
 }

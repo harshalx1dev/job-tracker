@@ -33,6 +33,8 @@ export const jobInputSchema = z.object({
 });
 
 export type JobInput = z.input<typeof jobInputSchema>;
+/** A job after validation (defaults applied, empty strings dropped). */
+export type ParsedJob = z.output<typeof jobInputSchema>;
 
 export const moveJobSchema = z.object({
   jobId: z.string().min(1),

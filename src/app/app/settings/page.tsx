@@ -6,6 +6,8 @@ import { StatusManager } from "@/features/settings/status-manager";
 import { AiKeyCard } from "@/features/settings/ai-key-card";
 import { DeleteAccount } from "@/features/settings/delete-account";
 import { DraftModelCard } from "@/features/settings/draft-model-card";
+import { McpTokenCard } from "@/features/settings/mcp-token-card";
+import { getMcpTokensSafe } from "@/server/mcp/tokens";
 import { getModelPicker } from "@/server/ai/models";
 import { getAiStatus } from "@/server/ai/status";
 import { listStatuses } from "@/server/jobs/statuses";
@@ -28,10 +30,12 @@ export default function SettingsPage() {
 
 async function SettingsLoader() {
   const user = await requireUser();
-  const [statuses, ai] = await Promise.all([
+  const [statuses, ai, mcpTokens] = await Promise.all([
     listStatuses(user.id),
     getAiStatus(user),
+    getMcpTokensSafe(user.id),
   ]);
+  const mcpEndpoint = `${(process.env.BETTER_AUTH_URL ?? "").replace(/\/$/, "")}/api/mcp`;
   return (
     <>
       <Section title="Account" description="Signed in with email and password.">
@@ -73,6 +77,16 @@ async function SettingsLoader() {
           <DraftModelLoader />
         </Suspense>
       </Section>
+
+      {/* null: the connector tables aren't there yet (migration pending); hide the card. */}
+      {mcpTokens && (
+        <Section
+          title="Claude connector"
+          description="Let Claude read your profile and jobs, and add leads and drafts, using a token you control."
+        >
+          <McpTokenCard tokens={mcpTokens} endpoint={mcpEndpoint} />
+        </Section>
+      )}
 
       <Section
         title="Delete account"

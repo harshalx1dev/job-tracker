@@ -14,6 +14,7 @@ AI features use each user's **own Gemini key** (saved encrypted); the app's key 
 - **Outreach**: AI drafts of emails and LinkedIn notes in chosen tones, saved and favouritable.
 - **Answer bank**: reusable answers to application questions, AI drafting, and "find similar" search.
 - **Interview prep**: plans per job (1-day crash, multi-day, full) built from the curated question bank, progress tracking, and read-only share links.
+- **Claude connector** (Settings): create a personal access token and add Trackr to Claude as a custom connector (`/api/mcp`, a remote MCP server). Claude can then read your profile, jobs and answer bank, and add job leads, resume versions, outreach drafts and answers. It never uses an AI key of yours, never edits or deletes what you already have, and only changes wording on resume copies, never facts. Tokens are shown once, stored hashed, scoped read-only or read and write, expire (90 days by default) and can be revoked. In Claude: Customize → Connectors → Add custom connector, URL `<your site>/api/mcp`, Authentication **No sign-in**, and under **Request headers** add `authorization` with the value `Bearer <token>` (request headers is a beta feature that may not be available on every plan).
 - **Settings**: your Gemini key and model, statuses, account deletion. **Admin**: question bank import.
 - **Ctrl+K** opens a command palette for navigation and quick actions.
 
@@ -100,7 +101,7 @@ npm run db:migrate
 Remove-Item Env:DATABASE_URL_UNPOOLED
 ```
 
-(bash: `DATABASE_URL_UNPOOLED="<url>" npm run db:migrate`.) Migrate first, then deploy: code that uses a new table fails until it exists. Migrations only add things, so they are safe to run before the new code is live.
+(bash: `DATABASE_URL_UNPOOLED="<url>" npm run db:migrate`.) Migrate first, then deploy: code that uses a new table fails until it exists, and code that reads a new column of an existing table (for example `jobs.claude_match`) breaks the pages that read that table. Migrations only add things, so they are safe to run before the new code is live. Take a Neon backup branch first.
 
 ## Scripts
 

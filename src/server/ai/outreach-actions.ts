@@ -11,6 +11,7 @@ import {
   checkLimits,
   limitsFor,
   outreachRequestSchema,
+  outreachSaveSchema,
   type OutreachDraft,
   type OutreachRequest,
 } from "@/lib/outreach";
@@ -50,14 +51,7 @@ export async function generateOutreachAction(
   }
 }
 
-const saveSchema = z.object({
-  channel: z.enum(CHANNELS.map((c) => c.id) as [string, ...string[]]),
-  tone: z.string().max(20),
-  jobId: z.string().optional(),
-  recipientName: z.string().trim().max(80).optional(),
-  subject: z.string().trim().max(200).optional(),
-  body: z.string().trim().min(1, "The message is empty").max(4000),
-});
+const saveSchema = outreachSaveSchema;
 
 export async function saveOutreach(input: z.input<typeof saveSchema>) {
   const user = await requireUser();

@@ -25,7 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getJobExtras } from "@/server/jobs/contact-actions";
 import type { Contact, JobEvent } from "@/server/db/schema";
 import { ContactsSection } from "./contacts-section";
-import { MatchPanel } from "./match-panel";
+import { ClaudeMatchPanel, MatchPanel } from "./match-panel";
 import { JobPrep } from "@/features/prep/job-prep";
 import { statusColor } from "@/lib/status-colors";
 import { cn } from "@/lib/utils";
@@ -197,7 +197,12 @@ export function JobSheet({
               )}
 
               <Section title="Fit with your profile">
-                <MatchPanel jobId={job.id} match={job.match ?? null} />
+                <div className="space-y-4">
+                  <MatchPanel jobId={job.id} match={job.match ?? null} />
+                  {job.claudeMatch && (
+                    <ClaudeMatchPanel match={job.claudeMatch} />
+                  )}
+                </div>
               </Section>
 
               <Section title="Interview prep">
