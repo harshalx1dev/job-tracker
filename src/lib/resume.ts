@@ -90,6 +90,8 @@ export const designSchema = z.object({
   /** Space between sections in millimetres. */
   sectionGap: z.number().min(2).max(10).catch(5),
   headerAlign: z.enum(["left", "center"]).catch("center"),
+  /** Centred header only: the headline next to the name, or on its own line below it. */
+  headlinePosition: z.enum(["beside", "below"]).catch("beside"),
   contactStyle: z.enum(["icons", "dots", "bars"]).catch("icons"),
   headingCase: z.enum(["upper", "title"]).catch("upper"),
   headingRule: z.enum(["none", "thin", "thick"]).catch("thick"),

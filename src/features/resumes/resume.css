@@ -64,6 +64,11 @@
 .rz-center .rz-head {
   text-align: center;
 }
+.rz-hl-below .rz-titleline {
+  flex-direction: column;
+  align-items: center;
+  row-gap: 0.15em;
+}
 .rz-left .rz-titleline {
   flex-direction: column;
   align-items: flex-start;

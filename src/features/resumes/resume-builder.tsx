@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -18,6 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -42,7 +51,43 @@ import { syncResumeFromProfile, updateResume } from "@/server/resumes/actions";
 import { ProfileFields } from "@/features/profile/profile-fields";
 import { ScaledPage, type FitFn } from "./scaled-page";
 
-type SaveState = "saved" | "saving" | "error";
+type SaveState = "idle" | "saving" | "error";
+
+const AUTOSAVE_KEY = "trackr:resume-autosave";
+const AUTOSAVE_EVENT = "trackr:resume-autosave-change";
+let memory = true;
+
+/** Autosave on/off, remembered in this browser. On unless switched off. */
+function useAutosavePreference() {
+  const on = useSyncExternalStore(
+    (notify) => {
+      window.addEventListener("storage", notify);
+      window.addEventListener(AUTOSAVE_EVENT, notify);
+      return () => {
+        window.removeEventListener("storage", notify);
+        window.removeEventListener(AUTOSAVE_EVENT, notify);
+      };
+    },
+    () => {
+      try {
+        return localStorage.getItem(AUTOSAVE_KEY) !== "off";
+      } catch {
+        return memory; // storage blocked
+      }
+    },
+    () => true,
+  );
+  const set = (value: boolean) => {
+    memory = value;
+    try {
+      localStorage.setItem(AUTOSAVE_KEY, value ? "on" : "off");
+    } catch {
+      // Blocked: the choice lasts until the page is reloaded.
+    }
+    window.dispatchEvent(new Event(AUTOSAVE_EVENT));
+  };
+  return [on, set] as const;
+}
 
 export function ResumeBuilder({
   resume,
@@ -58,37 +103,74 @@ export function ResumeBuilder({
     normalizeDesign(resume.design),
   );
   const [tab, setTab] = useState<"content" | "design">("content");
-  const [save, setSave] = useState<SaveState>("saved");
+  const [save, setSave] = useState<SaveState>("idle");
   const [epoch, setEpoch] = useState(0);
   const [syncing, startSync] = useTransition();
   const [downloading, setDownloading] = useState(false);
-  const first = useRef(true);
+  const [autosave, setAutosave] = useAutosavePreference();
+  // What the database holds (as far as this page knows). The raw values, so
+  // "unsaved changes" is a plain comparison with what is on screen.
+  const [saved, setSaved] = useState(() => ({
+    title: resume.title,
+    content: resume.content,
+    design: normalizeDesign(resume.design),
+  }));
+  const dirty = useMemo(
+    () =>
+      title !== saved.title ||
+      JSON.stringify(content) !== JSON.stringify(saved.content) ||
+      JSON.stringify(design) !== JSON.stringify(saved.design),
+    [title, content, design, saved],
+  );
   // Server sent fresh content ("From profile"): take it and re-key the form.
   const [seenContent, setSeenContent] = useState(resume.content);
   if (resume.content !== seenContent) {
     setSeenContent(resume.content);
     setContent(resume.content);
+    setSaved((s) => ({ ...s, content: resume.content }));
     setEpoch((e) => e + 1);
   }
 
-  // Autosave: 700ms after the last change.
-  useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
+  const persist = useCallback(async () => {
+    const snapshot = { title, content, design };
+    setSave("saving");
+    const res = await updateResume(resume.id, {
+      title: title.trim() || "Untitled resume",
+      content,
+      design,
+    });
+    if (res.ok) {
+      setSaved(snapshot);
+      setSave("idle");
+    } else {
+      setSave("error");
+      toast.error(res.error);
     }
-    const t = setTimeout(async () => {
-      setSave("saving");
-      const res = await updateResume(resume.id, {
-        title: title.trim() || "Untitled resume",
-        content,
-        design,
-      });
-      setSave(res.ok ? "saved" : "error");
-      if (!res.ok) toast.error(res.error);
-    }, 700);
-    return () => clearTimeout(t);
   }, [title, content, design, resume.id]);
+
+  // Autosave: 700ms after the last change. Turning it on saves pending changes.
+  useEffect(() => {
+    if (!autosave || !dirty) return;
+    const t = setTimeout(persist, 700);
+    return () => clearTimeout(t);
+  }, [autosave, dirty, persist]);
+
+  // With autosave off, closing or reloading the tab would lose the changes.
+  useEffect(() => {
+    if (autosave || !dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [autosave, dirty]);
+
+  function discard() {
+    if (!confirm("Discard your unsaved changes?")) return;
+    setTitle(saved.title);
+    setContent(saved.content);
+    setDesign(saved.design);
+    setSave("idle");
+    setEpoch((e) => e + 1); // fields keep their own text; re-key them
+  }
 
   const setD = (patch: Partial<ResumeDesign>) =>
     setDesign((d) => ({ ...d, ...patch }));
@@ -158,6 +240,10 @@ export function ResumeBuilder({
       <header className="flex flex-wrap items-center gap-3 border-b px-4 py-3 sm:px-6">
         <Link
           href="/app/resumes"
+          onClick={(e) => {
+            if (dirty && !autosave && !confirm("Leave without saving?"))
+              e.preventDefault();
+          }}
           className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
           aria-label="Back to resumes"
         >
@@ -175,13 +261,44 @@ export function ResumeBuilder({
           aria-live="polite"
         >
           {save === "saving" && <Loader2 className="size-3 animate-spin" />}
-          {save === "saved" && <Check className="size-3" />}
+          {save === "idle" && !(dirty && !autosave) && (
+            <Check className="size-3" />
+          )}
           {save === "saving"
             ? "Saving"
-            : save === "saved"
-              ? "Saved"
-              : "Not saved"}
+            : save === "error"
+              ? "Not saved"
+              : dirty && !autosave
+                ? "Unsaved changes"
+                : "Saved"}
         </span>
+        <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+          <Checkbox
+            checked={autosave}
+            onCheckedChange={(v) => setAutosave(v === true)}
+          />
+          Autosave
+        </label>
+        {!autosave && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!dirty || save === "saving"}
+              onClick={discard}
+            >
+              Discard
+            </Button>
+            <Button
+              size="sm"
+              disabled={!dirty || save === "saving"}
+              onClick={persist}
+            >
+              {save === "saving" && <Loader2 className="animate-spin" />}
+              Save
+            </Button>
+          </>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -189,7 +306,7 @@ export function ResumeBuilder({
           onClick={() => {
             if (
               !confirm(
-                "Replace this resume's content with your current profile? The design stays.",
+                `Replace this resume's content with your current profile? The design stays.${dirty && !autosave ? " Unsaved changes to the content will be lost." : ""}`,
               )
             )
               return;
@@ -207,7 +324,9 @@ export function ResumeBuilder({
         <Button
           size="sm"
           onClick={download}
-          disabled={downloading || save === "saving"}
+          // The PDF is made from what is saved, so wait for unsaved changes.
+          disabled={downloading || save === "saving" || dirty}
+          title={dirty ? "Save your changes first" : undefined}
         >
           {downloading ? <Loader2 className="animate-spin" /> : <Download />}
           Download PDF
@@ -461,6 +580,19 @@ function DesignPanel({
               onChange={(headerAlign) => setD({ headerAlign })}
             />
           </Field>
+          {/* A left header already puts the headline under the name. */}
+          {design.headerAlign === "center" && (
+            <Field label="Headline">
+              <Segmented
+                value={design.headlinePosition}
+                options={[
+                  { value: "beside", label: "Beside name" },
+                  { value: "below", label: "Below name" },
+                ]}
+                onChange={(headlinePosition) => setD({ headlinePosition })}
+              />
+            </Field>
+          )}
           <Field label="Contact details">
             <Segmented
               value={design.contactStyle}

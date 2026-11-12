@@ -47,6 +47,7 @@ export function ResumeDocument({
     resumeFontClassName,
     `rz--${design.template}`,
     center ? "rz-center" : "rz-left",
+    center && design.headlinePosition === "below" ? "rz-hl-below" : "",
     design.linkUnderline ? "rz-u" : "",
     `rz-rule-${design.headingRule}`,
     `rz-case-${design.headingCase}`,
