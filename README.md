@@ -1,6 +1,21 @@
 # Trackr (working title)
 
-A job search workspace: track applications on a Kanban board or list, build ATS-friendly resumes, draft outreach with AI and prep for interviews from a curated question bank. See [plan.md](plan.md) for the full spec and roadmap.
+A job search workspace: track applications on a Kanban board or list, keep one structured profile, build ATS-friendly resumes, draft outreach and answers with AI, and prep for interviews from a curated question bank. See [plan.md](plan.md) for the full spec and roadmap.
+
+## Features
+
+AI features use each user's **own Gemini key** (saved encrypted); the app's key is admin-only. Interview prep questions and answers are never AI-generated.
+
+- **Dashboard**: pipeline analytics (applications per week, jobs per stage).
+- **Jobs**: Kanban board (drag to move) or sortable list, your own statuses, a detail drawer with contacts and history, AI import from a pasted job description, and an AI match score against your profile.
+- **Profile**: one structured profile that every AI feature reads. Upload a PDF or Word resume and an AI parses it (keeping bold, italics and links); you review each section before it is applied. Summary, experience and projects use a rich text editor (bold, italic, links, real bullets, sub-headings for projects under a role).
+- **Questions for you** (on the Profile page): the AI asks specific questions about gaps in your background. Answer each, or mark it Not relevant or No idea. Your answers are added to the context every AI feature uses.
+- **Resumes**: built from your profile, two templates (Professional, Modern), design controls (font, size, spacing, margins, header, accent colours), Fit to one page, autosave that can be switched off (with Save and Discard), optional tailoring to a job, and real-text PDF export that ATS systems can read.
+- **Outreach**: AI drafts of emails and LinkedIn notes in chosen tones, saved and favouritable.
+- **Answer bank**: reusable answers to application questions, AI drafting, and "find similar" search.
+- **Interview prep**: plans per job (1-day crash, multi-day, full) built from the curated question bank, progress tracking, and read-only share links.
+- **Settings**: your Gemini key and model, statuses, account deletion. **Admin**: question bank import.
+- **Ctrl+K** opens a command palette for navigation and quick actions.
 
 ## Stack
 
@@ -13,6 +28,8 @@ npm install
 cp .env.example .env.local   # fill in the secrets and admin details
 npm run dev                  # applies migrations first, then starts on :3000
 ```
+
+At minimum set `BETTER_AUTH_SECRET` and `ENCRYPTION_KEY` (generation commands are in `.env.example`). Never change `ENCRYPTION_KEY` once users have saved AI keys, or they will have to enter them again.
 
 With no `DATABASE_URL`, the app uses an embedded PGlite database in `./.data/pglite`, so no Postgres install is needed. Set `DATABASE_URL` to a Neon (or any Postgres) URL for production.
 
@@ -62,7 +79,7 @@ Add these to `.env.local` (or Vercel) only if you need them:
 
 | Variable | What it does |
 |---|---|
-| `GEMINI_MODEL` | Gemini model id (default `gemini-flash-latest`). [Models](https://ai.google.dev/gemini-api/docs/models) |
+| `GEMINI_MODEL` | Fallback Gemini model id for users who haven't picked one in Settings (default `gemini-3.5-flash`). [Models](https://ai.google.dev/gemini-api/docs/models) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | "Sign in with Google". Callback: `<BETTER_AUTH_URL>/api/auth/callback/google`. [Console](https://console.cloud.google.com/apis/credentials) |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | "Sign in with GitHub". Callback: `<BETTER_AUTH_URL>/api/auth/callback/github`. [OAuth apps](https://github.com/settings/developers) |
 | `PRINT_TOKEN_SECRET` | Signs PDF print links (defaults to `BETTER_AUTH_SECRET`) |
@@ -70,6 +87,20 @@ Add these to `.env.local` (or Vercel) only if you need them:
 | `NEXT_PUBLIC_THEME_LAB=off` | Hides the theme trial button |
 | `SMTP_HOST`, `SMTP_PORT` | Another SMTP provider (defaults: `smtp.gmail.com`, `465`) |
 | `RESEND_API_KEY` | Send through [Resend](https://resend.com) instead of SMTP; needs a [verified domain](https://resend.com/domains) to email anyone |
+
+## Deploying (Vercel + Neon)
+
+Set the environment variables from `.env.example` in Vercel (Settings → Environment Variables), with `DATABASE_URL` set to your Neon pooled URL.
+
+**Migrations are not run on deploy.** `npm run build` is a plain `next build`, and `npm run dev` only migrates the database in your `.env.local`. Whenever a new `drizzle/NNNN_*.sql` file is added, apply it to production yourself, using the **direct (unpooled)** connection string:
+
+```powershell
+$env:DATABASE_URL_UNPOOLED = "<production direct connection string>"   # plain quotes, not curly ones
+npm run db:migrate
+Remove-Item Env:DATABASE_URL_UNPOOLED
+```
+
+(bash: `DATABASE_URL_UNPOOLED="<url>" npm run db:migrate`.) Migrate first, then deploy: code that uses a new table fails until it exists. Migrations only add things, so they are safe to run before the new code is live.
 
 ## Scripts
 
@@ -79,6 +110,7 @@ Add these to `.env.local` (or Vercel) only if you need them:
 | `npm run build` | Production build |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
+| `npm run format` | Prettier |
 | `npm run db:generate` | Generate a migration from `src/server/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations |
 | `npm run db:studio` | Drizzle Studio |
@@ -91,12 +123,21 @@ Add these to `.env.local` (or Vercel) only if you need them:
 
 ```
 src/
-  app/               routes: landing, (auth), app/jobs, api/auth
-  components/        shell, providers, shadcn/ui primitives
-  features/jobs/     board, list, card, form, drawer, workspace
-  lib/               validators (zod), status colors, auth client
-  server/            db (schema + client), auth, session (data access), jobs (queries + actions)
+  app/               routes: landing, (auth), app/* (dashboard, jobs, profile, resumes, outreach,
+                     answers, prep, settings, admin), api/auth, api/resumes/[id]/pdf,
+                     print/resume (PDF source), p/[token] (shared prep plans)
+  components/        app shell, providers, shadcn/ui primitives
+  features/          UI by area: jobs, profile (incl. rich editor, questions), resumes, ai, prep,
+                     dashboard, settings, admin
+  lib/               pure, unit-tested logic and zod schemas (profile, resume design, rich text,
+                     prep planning, question import, AI limits and schemas)
+  server/            data access and server actions by area: db (schema + client), auth,
+                     session, ai (gateway, features, limits), jobs, profile, resumes, prep
   proxy.ts           optimistic auth redirect (Next 16's middleware)
+drizzle/             SQL migrations (generate with `npm run db:generate`)
+scripts/             migrate, seed, question import
 ```
+
+Every query is scoped to the signed-in user (`requireUser()` in `src/server/session.ts`); `proxy.ts` only does optimistic routing.
 
 Admins: emails listed in `ADMIN_EMAILS` get `role=admin` on sign-up. Only admins may use the app's own Gemini key.
