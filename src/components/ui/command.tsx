@@ -57,7 +57,8 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
-        {children}
+        {/* cmdk's input, list and items read their state from this root. */}
+        <Command>{children}</Command>
       </DialogContent>
     </Dialog>
   );
