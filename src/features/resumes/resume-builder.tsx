@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,6 +12,7 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  Minimize2,
   RefreshCw,
   Sparkles,
 } from "lucide-react";
@@ -39,7 +40,7 @@ import {
 import type { Resume } from "@/server/db/schema";
 import { syncResumeFromProfile, updateResume } from "@/server/resumes/actions";
 import { ProfileFields } from "@/features/profile/profile-fields";
-import { ScaledPage } from "./scaled-page";
+import { ScaledPage, type FitFn } from "./scaled-page";
 
 type SaveState = "saved" | "saving" | "error";
 
@@ -91,6 +92,30 @@ export function ResumeBuilder({
 
   const setD = (patch: Partial<ResumeDesign>) =>
     setDesign((d) => ({ ...d, ...patch }));
+
+  // The preview measures the document; this asks it for a size that fits one page.
+  const fitRef = useRef<FitFn | null>(null);
+  const onFitReady = useCallback((fn: FitFn) => {
+    fitRef.current = fn;
+  }, []);
+  function fitToOnePage() {
+    const r = fitRef.current?.();
+    if (!r) {
+      toast.error(
+        "Even the smallest text doesn't fit one page. Trim some content or lower the margin.",
+      );
+    } else if (
+      r.fontSize === design.fontSize &&
+      r.lineHeight === design.lineHeight
+    ) {
+      toast.success("Already fits on one page.");
+    } else {
+      setD(r);
+      toast.success(
+        `Text set to ${r.fontSize}pt, line height ${r.lineHeight}.`,
+      );
+    }
+  }
   const moveSection = (i: number, dir: -1 | 1) =>
     setDesign((d) => {
       const order = [...d.order];
@@ -253,6 +278,7 @@ export function ResumeBuilder({
                 setD={setD}
                 moveSection={moveSection}
                 toggleHidden={toggleHidden}
+                onFit={fitToOnePage}
               />
             )}
           </div>
@@ -262,6 +288,7 @@ export function ResumeBuilder({
           <ScaledPage
             content={content}
             design={design}
+            onFitReady={onFitReady}
             className="mx-auto max-w-[820px]"
           />
         </div>
@@ -275,11 +302,13 @@ function DesignPanel({
   setD,
   moveSection,
   toggleHidden,
+  onFit,
 }: {
   design: ResumeDesign;
   setD: (patch: Partial<ResumeDesign>) => void;
   moveSection: (i: number, dir: -1 | 1) => void;
   toggleHidden: (key: ResumeDesign["order"][number]) => void;
+  onFit: () => void;
 }) {
   const fontItems = RESUME_FONTS.map((f) => ({ value: f.id, label: f.label }));
   const toggleTarget = (id: ResumeDesign["accentOn"][number]) =>
@@ -385,6 +414,15 @@ function DesignPanel({
             step={0.05}
             onChange={(lineHeight) => setD({ lineHeight })}
           />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={onFit}
+          >
+            <Minimize2 /> Fit to one page
+          </Button>
         </div>
       </Group>
 

@@ -39,17 +39,64 @@ function computeBreaks(units: Unit[], contentH: number): number[] {
   return starts;
 }
 
+/** The text size and line height that make the resume fit one page, or null if none does. */
+export type FitFn = () => { fontSize: number; lineHeight: number } | null;
+
+const MIN_FONT = 8.5; // pt, the Design tab's smallest size
+const MIN_LINE = 1.2;
+
+/**
+ * Tries smaller text, then tighter lines, until the whole document is no taller
+ * than one page's content area. Measured on the hidden copy: its size and line
+ * height are CSS variables, so each try is one style change and one layout read.
+ */
+function fitOnePage(
+  doc: HTMLElement,
+  contentH: number,
+  fontSize: number,
+  lineHeight: number,
+) {
+  const prev = [
+    doc.style.getPropertyValue("--rz-size"),
+    doc.style.getPropertyValue("--rz-lh"),
+  ];
+  const fits = (size: number, line: number) => {
+    doc.style.setProperty("--rz-size", `${size}pt`);
+    doc.style.setProperty("--rz-lh", String(line));
+    return doc.getBoundingClientRect().height <= contentH + 0.5;
+  };
+  const lowest = Math.min(
+    Math.round(lineHeight * 100),
+    Math.round(MIN_LINE * 100),
+  );
+  let found: { fontSize: number; lineHeight: number } | null = null;
+  search: for (let size = fontSize; size >= MIN_FONT; size -= 0.5) {
+    for (let k = Math.round(lineHeight * 100); k >= lowest; k -= 5) {
+      if (fits(size, k / 100)) {
+        found = { fontSize: size, lineHeight: k / 100 };
+        break search;
+      }
+    }
+  }
+  doc.style.setProperty("--rz-size", prev[0]);
+  doc.style.setProperty("--rz-lh", prev[1]);
+  return found;
+}
+
 /** Renders the resume as separate pages (like the PDF), scaled to the container's width. */
 export function ScaledPage({
   content,
   design: rawDesign,
   className,
   shadow = true,
+  onFitReady,
 }: {
   content: Profile;
   design: ResumeDesign;
   className?: string;
   shadow?: boolean;
+  /** Hands the parent a function that finds the text size that fits one page. */
+  onFitReady?: (fit: FitFn) => void;
 }) {
   const design = normalizeDesign(rawDesign);
   const { w: PAGE_W, h: PAGE_H } = pageSize(design);
@@ -107,6 +154,14 @@ export function ScaledPage({
       ro.disconnect();
     };
   }, [recompute, content, dKey]);
+
+  const { fontSize, lineHeight } = design;
+  useEffect(() => {
+    onFitReady?.(() => {
+      const doc = measure.current?.querySelector<HTMLElement>(".rz-page");
+      return doc ? fitOnePage(doc, contentH, fontSize, lineHeight) : null;
+    });
+  }, [onFitReady, contentH, fontSize, lineHeight]);
 
   const pageHScaled = PAGE_H * scale;
   const n = starts.length;
