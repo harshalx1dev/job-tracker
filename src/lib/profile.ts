@@ -26,7 +26,8 @@ export const experienceSchema = z.object({
   end: text(20).describe("YYYY-MM, YYYY or Present"),
   highlights: z
     .array(text(400))
-    .max(12)
+    // Sub-headings ("## ") are entries too, so a role with several groups needs room.
+    .max(40)
     .describe(
       "Achievement bullets, as written, keeping **bold**, *italic* and [text](url). A line starting with '## ' names a group of bullets (a project under the role); empty of such lines when the role has none",
     ),
@@ -42,7 +43,7 @@ export const projectSchema = z.object({
   description: text(600),
   highlights: z
     .array(text(400))
-    .max(12)
+    .max(40)
     .describe("Bullets, as written")
     .optional(),
   tech: z.array(text(40)).max(20),

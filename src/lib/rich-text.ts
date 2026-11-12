@@ -139,6 +139,13 @@ export function toggleMarker(
   };
 }
 
+/** A typed address as a safe link: a bare domain gets https://; anything unsafe is null. */
+export function normalizeHref(raw: string): string | null {
+  let url = raw.trim();
+  if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(url)) url = `https://${url}`;
+  return safeHref(url);
+}
+
 /** Turns the selection into [selection](url). Returns null when the address isn't a usable link. */
 export function applyLink(
   value: string,
@@ -146,9 +153,7 @@ export function applyLink(
   end: number,
   rawUrl: string,
 ): Edit | null {
-  let url = rawUrl.trim();
-  if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(url)) url = `https://${url}`;
-  const href = safeHref(url);
+  const href = normalizeHref(rawUrl);
   if (!href) return null;
   const label = value.slice(start, end) || href;
   const link = `[${label}](${href})`;
@@ -159,21 +164,67 @@ export function applyLink(
   };
 }
 
-/** Adds or removes the "## " sub-heading prefix on the line the caret is in. */
-export function toggleHeading(value: string, caret: number): Edit {
-  const lineStart = value.lastIndexOf("\n", caret - 1) + 1;
-  const hasPrefix = value.startsWith("## ", lineStart);
-  const next = hasPrefix
-    ? value.slice(0, lineStart) + value.slice(lineStart + 3)
-    : value.slice(0, lineStart) + "## " + value.slice(lineStart);
-  const at = Math.max(lineStart, caret + (hasPrefix ? -3 : 3));
-  return { value: next, start: at, end: at };
-}
-
 /** A highlight line that starts a named group of bullets under a role or project. */
 export const HEADING_PREFIX = "## ";
 export const isHeadingLine = (s: string) => s.startsWith(HEADING_PREFIX);
 export const headingText = (s: string) => s.slice(HEADING_PREFIX.length).trim();
+
+/** A bullet becomes a sub-heading and the other way round. */
+export const toggleHeadingLine = (s: string) =>
+  isHeadingLine(s) ? headingText(s) : HEADING_PREFIX + s;
+
+/* ---- tokens back to markup (the editor's way to store what it shows) ---- */
+
+const escapeText = (s: string) => s.replace(/[\\*[\]]/g, "\\$&");
+
+/** Markers hug the words: leading and trailing spaces stay outside them. */
+function styled(text: string, bold: boolean, italic: boolean) {
+  const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(escapeText(text))!;
+  if (!m[2]) return m[1] + m[3];
+  const mark = (bold ? "**" : "") + (italic ? "*" : "");
+  return `${m[1]}${mark}${m[2]}${[...mark].reverse().join("")}${m[3]}`;
+}
+
+/**
+ * Inverse of parseRichText: parseRichText(tokensToMarkup(t)) gives back t
+ * (adjacent tokens with the same style merge). Links that aren't safe web or
+ * mail addresses are written as plain text.
+ */
+export function tokensToMarkup(tokens: RichToken[]): string {
+  // Merge neighbours with the same style so markers aren't repeated.
+  const merged: RichToken[] = [];
+  for (const t of tokens) {
+    if (!t.text) continue;
+    const last = merged[merged.length - 1];
+    if (
+      last &&
+      !!last.bold === !!t.bold &&
+      !!last.italic === !!t.italic &&
+      last.href === t.href
+    )
+      last.text += t.text;
+    else merged.push({ ...t });
+  }
+  let out = "";
+  let i = 0;
+  while (i < merged.length) {
+    const t = merged[i];
+    const href = t.href ? safeHref(t.href) : null;
+    if (!href) {
+      out += styled(t.text, !!t.bold, !!t.italic);
+      i++;
+      continue;
+    }
+    // One link can hold several styles: [**bold** and plain](url).
+    let inner = "";
+    while (i < merged.length && merged[i].href === t.href) {
+      inner += styled(merged[i].text, !!merged[i].bold, !!merged[i].italic);
+      i++;
+    }
+    out += `[${inner}](${href.replace(/\)/g, "%29").replace(/\s/g, "%20")})`;
+  }
+  return out;
+}
 
 /** Removes the markup, keeping the words. */
 export function stripRichText(src: string): string {

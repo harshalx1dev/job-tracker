@@ -188,7 +188,9 @@
 }
 .rz-list {
   margin-top: 0.15em;
-  padding-left: 1.1em;
+  /* Outside markers sit in this padding: enough room for the bullet to stand
+   * in from the heading's edge, with a clear gap before the text. */
+  padding-left: 1.55em;
   list-style: disc outside;
 }
 .rz-subhead {

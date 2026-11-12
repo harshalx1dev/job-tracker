@@ -2,14 +2,8 @@
 
 import { Textarea } from "@/components/ui/textarea";
 import type { Profile } from "@/lib/profile";
-import {
-  CommaInput,
-  Field,
-  LinesInput,
-  ListEditor,
-  RichTextarea,
-  TextInput,
-} from "./fields";
+import { CommaInput, Field, LinesInput, ListEditor, TextInput } from "./fields";
+import { RichEditor } from "./rich-editor";
 
 /**
  * Every profile section as a form. Used by the profile page and by the resume
@@ -97,9 +91,9 @@ export function ProfileFields({
       </Block>
 
       <Block id="summary" title="Summary">
-        <Field label="Text">
-          <RichTextarea
-            rows={4}
+        <Field label="Text" plain>
+          <RichEditor
+            mode="inline"
             value={profile.summary}
             onChange={(v) => set("summary", v)}
           />
@@ -161,12 +155,12 @@ export function ProfileFields({
               </Field>
               <Field
                 label="Highlights"
-                hint="One per line. Use the heading button to name a group of bullets (a project under this role)."
+                hint="Enter adds a bullet. The heading button turns a line into a bold sub-heading for the bullets below it (a project under this role)."
                 className="sm:col-span-2"
+                plain
               >
-                <LinesInput
-                  headings
-                  rows={6}
+                <RichEditor
+                  mode="bullets"
                   value={x.highlights ?? []}
                   onChange={(highlights) => setX({ highlights })}
                 />
@@ -223,20 +217,16 @@ export function ProfileFields({
                   onChange={(tech) => setX({ tech })}
                 />
               </Field>
-              <Field label="Description" className="sm:col-span-2">
-                <RichTextarea
-                  rows={3}
+              <Field label="Description" className="sm:col-span-2" plain>
+                <RichEditor
+                  mode="inline"
                   value={x.description}
                   onChange={(description) => setX({ description })}
                 />
               </Field>
-              <Field
-                label="Highlights"
-                hint="One per line"
-                className="sm:col-span-2"
-              >
-                <LinesInput
-                  headings
+              <Field label="Highlights" className="sm:col-span-2" plain>
+                <RichEditor
+                  mode="bullets"
                   value={x.highlights ?? []}
                   onChange={(highlights) => setX({ highlights })}
                 />

@@ -5,7 +5,8 @@ import {
   isHeadingLine,
   parseRichText,
   stripRichText,
-  toggleHeading,
+  toggleHeadingLine,
+  tokensToMarkup,
   toggleMarker,
 } from "./rich-text";
 
@@ -85,15 +86,56 @@ describe("editing helpers", () => {
     );
   });
 
-  it("toggles a sub-heading prefix on the caret's line", () => {
-    const on = toggleHeading("one\ntwo", 5);
-    expect(on.value).toBe("one\n## two");
-    expect(toggleHeading(on.value, on.start).value).toBe("one\ntwo");
+  it("toggles a line between bullet and sub-heading", () => {
+    expect(toggleHeadingLine("Birla Opus")).toBe("## Birla Opus");
+    expect(toggleHeadingLine("## Birla Opus")).toBe("Birla Opus");
   });
 
   it("recognises heading lines", () => {
     expect(isHeadingLine("## Birla Opus")).toBe(true);
     expect(isHeadingLine("Built ## things")).toBe(false);
     expect(headingText("##  Birla Opus ")).toBe("Birla Opus");
+  });
+});
+
+describe("tokensToMarkup", () => {
+  // Parsing the output must give back the same tokens: that is what keeps the
+  // editor from changing text it did not touch.
+  const roundTrip = (src: string) => {
+    const tokens = parseRichText(src);
+    expect(parseRichText(tokensToMarkup(tokens))).toEqual(tokens);
+  };
+
+  it("round-trips emphasis, links and combinations", () => {
+    roundTrip("plain");
+    roundTrip("a **b** *c* d");
+    roundTrip("***both*** end");
+    roundTrip("see [**docs**](https://x.dev/a) now");
+    roundTrip("[a **b** c](https://x.dev)");
+    roundTrip("**Designed workflows** in JavaScript");
+  });
+
+  it("escapes literal markup characters", () => {
+    const tokens = [{ text: "2 * 3 [x] \ done" }];
+    expect(parseRichText(tokensToMarkup(tokens))).toEqual(tokens);
+  });
+
+  it("keeps spaces outside the markers", () => {
+    expect(tokensToMarkup([{ text: " hi ", bold: true }])).toBe(" **hi** ");
+  });
+
+  it("merges neighbours with the same style", () => {
+    expect(
+      tokensToMarkup([
+        { text: "a", bold: true },
+        { text: "b", bold: true },
+      ]),
+    ).toBe("**ab**");
+  });
+
+  it("writes unsafe links as plain text", () => {
+    expect(tokensToMarkup([{ text: "x", href: "javascript:alert(1)" }])).toBe(
+      "x",
+    );
   });
 });

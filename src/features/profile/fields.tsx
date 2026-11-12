@@ -5,7 +5,6 @@ import {
   ArrowDown,
   ArrowUp,
   Bold,
-  Heading,
   Italic,
   Link as LinkIcon,
   Plus,
@@ -14,27 +13,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  applyLink,
-  toggleHeading,
-  toggleMarker,
-  type Edit,
-} from "@/lib/rich-text";
+import { applyLink, toggleMarker, type Edit } from "@/lib/rich-text";
 import { cn } from "@/lib/utils";
 
 export function Field({
   label,
   hint,
   className,
+  plain,
   children,
 }: {
   label: string;
   hint?: string;
   className?: string;
+  /** A div instead of a label: for editors with buttons inside, which a label would click. */
+  plain?: boolean;
   children: React.ReactNode;
 }) {
+  const Tag = plain ? "div" : "label";
   return (
-    <label className={cn("block space-y-1.5", className)}>
+    <Tag className={cn("block space-y-1.5", className)}>
       <span className="block text-xs font-medium text-muted-foreground">
         {label}
       </span>
@@ -42,7 +40,7 @@ export function Field({
       {hint && (
         <span className="block text-xs text-muted-foreground">{hint}</span>
       )}
-    </label>
+    </Tag>
   );
 }
 
@@ -51,23 +49,20 @@ export function TextInput(props: React.ComponentProps<typeof Input>) {
 }
 
 /**
- * A textarea for resume text with a small toolbar (bold, italic, link, and
- * optionally a sub-heading line). The text stays plain **markup**, so it works
- * everywhere the resume text does. Ctrl/Cmd + B, I and K do the same as the buttons.
+ * A textarea for short resume lines (education details) with a small toolbar
+ * (bold, italic, link). The text stays plain **markup**. Ctrl/Cmd + B, I and K
+ * do the same as the buttons. Summary, projects and experience use RichEditor.
  */
 export function RichTextarea({
   value,
   onChange,
   rows = 4,
   placeholder,
-  headings,
 }: {
   value: string;
   onChange: (v: string) => void;
   rows?: number;
   placeholder?: string;
-  /** Show the sub-heading button (for lists of bullets). */
-  headings?: boolean;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -97,9 +92,6 @@ export function RichTextarea({
       if (!r) window.alert("That doesn't look like a web address.");
       return r;
     });
-  const heading = () =>
-    apply((el) => toggleHeading(el.value, el.selectionStart));
-
   return (
     // The textarea comes first in the DOM, so the surrounding <label> targets it, not a button.
     <div className="flex flex-col-reverse gap-1.5">
@@ -114,6 +106,7 @@ export function RichTextarea({
           const run = { b: bold, i: italic, k: link }[e.key.toLowerCase()];
           if (!run) return;
           e.preventDefault();
+          e.stopPropagation(); // Ctrl+K here is "link", not the app's global search
           run();
         }}
       />
@@ -127,26 +120,20 @@ export function RichTextarea({
         <ToolButton label="Link (Ctrl+K)" onClick={link}>
           <LinkIcon />
         </ToolButton>
-        {headings && (
-          <ToolButton
-            label="Sub-heading for the bullets below (line starts with ##)"
-            onClick={heading}
-          >
-            <Heading />
-          </ToolButton>
-        )}
       </div>
     </div>
   );
 }
 
-function ToolButton({
+export function ToolButton({
   label,
   onClick,
+  active,
   children,
 }: {
   label: string;
   onClick: () => void;
+  active?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -155,7 +142,11 @@ function ToolButton({
       variant="ghost"
       size="icon-xs"
       aria-label={label}
+      aria-pressed={active}
       title={label}
+      className={cn(active && "bg-accent text-accent-foreground")}
+      // Keep the text selection: a click on the button must not move focus away.
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
     >
       {children}
@@ -169,13 +160,11 @@ export function LinesInput({
   onChange,
   rows = 4,
   placeholder,
-  headings,
 }: {
   value: string[];
   onChange: (v: string[]) => void;
   rows?: number;
   placeholder?: string;
-  headings?: boolean;
 }) {
   const [raw, setRaw] = useState(value.join("\n"));
   return (
@@ -183,7 +172,6 @@ export function LinesInput({
       rows={rows}
       value={raw}
       placeholder={placeholder}
-      headings={headings}
       onChange={(text) => {
         setRaw(text);
         onChange(
