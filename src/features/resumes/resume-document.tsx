@@ -8,7 +8,12 @@ import {
   type ResumeSectionKey,
 } from "@/lib/resume";
 import type { Profile } from "@/lib/profile";
-import { parseRichText, safeHref } from "@/lib/rich-text";
+import {
+  headingText,
+  isHeadingLine,
+  parseRichText,
+  safeHref,
+} from "@/lib/rich-text";
 import { resumeFontClassName, resumeFontFamily } from "./resume-fonts";
 
 /**
@@ -273,14 +278,35 @@ function Section({
 function Bullets({ items, ctx }: { items: string[]; ctx: Ctx }) {
   const list = items.filter((h) => h.trim());
   if (!list.length) return null;
+  // A "## " line names a group of bullets (a project under a role): it is a
+  // heading that stays with the bullets after it, not a bullet itself.
+  const blocks: ({ heading: string } | { bullets: string[] })[] = [];
+  for (const h of list) {
+    if (isHeadingLine(h)) blocks.push({ heading: headingText(h) });
+    else {
+      const last = blocks[blocks.length - 1];
+      if (last && "bullets" in last) last.bullets.push(h);
+      else blocks.push({ bullets: [h] });
+    }
+  }
   return (
-    <ul className="rz-list">
-      {list.map((h, i) => (
-        <li key={i} data-unit>
-          <Rich text={h} ctx={ctx} />
-        </li>
-      ))}
-    </ul>
+    <>
+      {blocks.map((b, i) =>
+        "heading" in b ? (
+          <p key={i} className="rz-subhead" data-unit data-keep="next">
+            <Rich text={b.heading} ctx={ctx} />
+          </p>
+        ) : (
+          <ul key={i} className="rz-list">
+            {b.bullets.map((h, j) => (
+              <li key={j} data-unit>
+                <Rich text={h} ctx={ctx} />
+              </li>
+            ))}
+          </ul>
+        ),
+      )}
+    </>
   );
 }
 

@@ -10,6 +10,7 @@ import {
   type PdfTextItem,
   type ResumeLink,
 } from "@/lib/resume-links";
+import { fontStyle, htmlToMarked, markPdfText } from "@/lib/resume-format";
 
 export const MAX_RESUME_BYTES = 4 * 1024 * 1024; // under Vercel's 4.5 MB request cap
 
@@ -18,6 +19,45 @@ const DOCX =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 type PdfDoc = Awaited<ReturnType<typeof getDocumentProxy>>;
+
+/**
+ * The document's text with bold and italic kept as **markers**. pdf.js only
+ * knows a font's real name (e.g. "OpenSans-Bold") once the page's operators
+ * are loaded. A font that can't be resolved just counts as plain text.
+ */
+async function pdfMarkedText(pdf: PdfDoc): Promise<string> {
+  const pages: string[] = [];
+  for (let n = 1; n <= pdf.numPages; n++) {
+    const page = await pdf.getPage(n);
+    await page.getOperatorList();
+    const content = await page.getTextContent();
+    const styles = new Map<string, { bold: boolean; italic: boolean }>();
+    const styleOf = (fontName: string) => {
+      let s = styles.get(fontName);
+      if (!s) {
+        let name = "";
+        try {
+          name = String(page.commonObjs.get(fontName)?.name ?? "");
+        } catch {
+          // font not resolved
+        }
+        s = fontStyle(name);
+        styles.set(fontName, s);
+      }
+      return s;
+    };
+    pages.push(
+      markPdfText(
+        content.items.flatMap((i) =>
+          "str" in i
+            ? [{ str: i.str, eol: i.hasEOL, ...styleOf(i.fontName) }]
+            : [],
+        ),
+      ),
+    );
+  }
+  return pages.join("\n\n");
+}
 
 /** Link annotations (clickable areas) with the words they cover, page by page. */
 async function pdfLinks(pdf: PdfDoc): Promise<ResumeLink[]> {
@@ -73,18 +113,26 @@ export async function extractResumeText(
   try {
     if (isPdf) {
       mime = PDF;
-      const pdf = await getDocumentProxy(bytes);
-      text = (await extractText(pdf, { mergePages: true })).text;
+      // fontExtraProperties keeps each font's real name (e.g. "…-Bold"), which marks bold and italic.
+      const pdf = await getDocumentProxy(bytes, { fontExtraProperties: true });
+      // Formatting is a bonus: if it can't be read, plain extraction still works.
+      text = await pdfMarkedText(pdf).catch(
+        async () => (await extractText(pdf, { mergePages: true })).text,
+      );
       // Links are a bonus: a file whose links can't be read still parses.
       links = await pdfLinks(pdf).catch(() => []);
     } else if (isZip && /\.docx$/i.test(file.name)) {
       mime = DOCX;
       const buffer = Buffer.from(bytes);
-      text = (await mammoth.extractRawText({ buffer })).value;
-      links = await mammoth
+      const raw = (await mammoth.extractRawText({ buffer })).value;
+      // The HTML gives bold, italics and links; fall back to raw text if it can't be read.
+      const html = await mammoth
         .convertToHtml({ buffer })
-        .then((r) => linksFromHtml(r.value))
-        .catch(() => []);
+        .then((r) => r.value)
+        .catch(() => "");
+      const marked = htmlToMarked(html);
+      text = marked.length >= 80 ? marked : raw;
+      links = linksFromHtml(html);
     } else {
       throw new AiError("BAD_OUTPUT", "Upload a PDF or a Word (.docx) file.");
     }

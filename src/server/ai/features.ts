@@ -4,7 +4,12 @@ import {
   jobMatchSchema,
   type JobImport,
 } from "@/lib/ai-schemas";
-import { profileSchema, profileToPrompt, type Profile } from "@/lib/profile";
+import {
+  profileSchema,
+  profileToPrompt,
+  stripPlainFields,
+  type Profile,
+} from "@/lib/profile";
 import type { CurrentUser } from "@/server/session";
 import { AiError } from "./errors";
 import { generateStructured } from "./gateway";
@@ -69,7 +74,7 @@ export async function parseResume(
   resumeText: string,
 ): Promise<Profile> {
   guardLength(resumeText);
-  return generateStructured({
+  const parsed = await generateStructured({
     user,
     feature: "parse_resume",
     schema: profileSchema,
@@ -83,6 +88,8 @@ export async function parseResume(
         "Experience: one entry per role, most recent first. Several roles at the same company are separate entries with the same company name. Never merge two roles or split one role.",
         "Dates: YYYY-MM when the month is given, otherwise YYYY. A current role ends with 'Present'. Convert month names (Mar 2021 -> 2021-03).",
         "Highlights: each bullet as its own item, word for word, without the bullet symbol. Join a bullet that wraps onto the next line. Keep numbers and metrics exactly.",
+        "Formatting: the text marks the resume's own bold as **bold** and italics as *italic*. Keep those markers exactly where they are inside summary, highlights, project descriptions and subtitles, and as [text](address) when the words are a link from the 'Links in the file' list. Never put markers in names, job titles, companies, dates, locations, skills, links, certifications or any other field, and never add emphasis the resume does not have.",
+        "Sub-headings: when a role has named sub-projects or workstreams, each followed by its own bullets (a bold line like 'Grasim DLPS Portal – Customer Payment & Approval Portal'), put each name as its own highlight starting with '## ' (for example '## Birla Opus Website') directly before that group's bullets. Never use '## ' for a role's own title line, and never when the role's bullets are not grouped.",
         "Headline: the resume's own headline if it has one, otherwise the most recent job title.",
         "Links: LinkedIn, GitHub, portfolio and similar. Take each address from the resume text or from the 'Links in the file' list at the end, which gives the real address behind clickable words like 'LinkedIn'; label it by its visible text or site. Copy addresses exactly; add https:// only to an address written without one (github.com/jane). Never build an address from a label: a link with no address in the file is left out. An email address that only appears as a mailto: link goes in email.",
         "Skills: keep the resume's own skill groups when it has them; otherwise group sensibly (Languages, Frameworks & Libraries, Tools & Platforms, Practices). No duplicates.",
@@ -94,6 +101,7 @@ export async function parseResume(
     prompt: `<document name="resume">\n${resumeText}\n</document>`,
     temperature: 0,
   });
+  return stripPlainFields(parsed);
 }
 
 export async function importJob(

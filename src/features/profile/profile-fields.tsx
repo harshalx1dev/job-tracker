@@ -2,7 +2,14 @@
 
 import { Textarea } from "@/components/ui/textarea";
 import type { Profile } from "@/lib/profile";
-import { CommaInput, Field, LinesInput, ListEditor, TextInput } from "./fields";
+import {
+  CommaInput,
+  Field,
+  LinesInput,
+  ListEditor,
+  RichTextarea,
+  TextInput,
+} from "./fields";
 
 /**
  * Every profile section as a form. Used by the profile page and by the resume
@@ -90,11 +97,11 @@ export function ProfileFields({
       </Block>
 
       <Block id="summary" title="Summary">
-        <Field label="Text" hint="**bold**, *italic*, [text](https://link)">
-          <Textarea
+        <Field label="Text">
+          <RichTextarea
             rows={4}
             value={profile.summary}
-            onChange={(e) => set("summary", e.target.value)}
+            onChange={(v) => set("summary", v)}
           />
         </Field>
       </Block>
@@ -154,10 +161,12 @@ export function ProfileFields({
               </Field>
               <Field
                 label="Highlights"
-                hint="One per line · **bold**, *italic*, [text](https://link)"
+                hint="One per line. Use the heading button to name a group of bullets (a project under this role)."
                 className="sm:col-span-2"
               >
                 <LinesInput
+                  headings
+                  rows={6}
                   value={x.highlights ?? []}
                   onChange={(highlights) => setX({ highlights })}
                 />
@@ -214,23 +223,20 @@ export function ProfileFields({
                   onChange={(tech) => setX({ tech })}
                 />
               </Field>
-              <Field
-                label="Description"
-                hint="**bold**, *italic*, [text](https://link)"
-                className="sm:col-span-2"
-              >
-                <Textarea
+              <Field label="Description" className="sm:col-span-2">
+                <RichTextarea
                   rows={3}
                   value={x.description}
-                  onChange={(e) => setX({ description: e.target.value })}
+                  onChange={(description) => setX({ description })}
                 />
               </Field>
               <Field
                 label="Highlights"
-                hint="One per line · **bold**, *italic*, [text](https://link)"
+                hint="One per line"
                 className="sm:col-span-2"
               >
                 <LinesInput
+                  headings
                   value={x.highlights ?? []}
                   onChange={(highlights) => setX({ highlights })}
                 />

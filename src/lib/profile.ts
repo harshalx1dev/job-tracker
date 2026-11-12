@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { headingText, isHeadingLine, stripRichText } from "@/lib/rich-text";
 
 /**
  * The canonical profile: one per user. Resume parsing fills it, the profile
@@ -26,7 +27,9 @@ export const experienceSchema = z.object({
   highlights: z
     .array(text(400))
     .max(12)
-    .describe("Achievement bullets, as written"),
+    .describe(
+      "Achievement bullets, as written, keeping **bold**, *italic* and [text](url). A line starting with '## ' names a group of bullets (a project under the role); empty of such lines when the role has none",
+    ),
 });
 
 export const projectSchema = z.object({
@@ -156,6 +159,66 @@ export function sectionSize(p: Profile, key: ProfileSection): number {
   ).length;
 }
 
+/**
+ * Only summary, highlights, project descriptions and subtitles, and education
+ * details carry **bold** / *italic* / [links](url) / "## " sub-headings. The
+ * parser can echo markers into other fields, which would show up as literal
+ * asterisks on the resume; this removes them there.
+ */
+export function stripPlainFields(p: Profile): Profile {
+  const s = stripRichText;
+  return {
+    ...p,
+    basics: {
+      ...p.basics,
+      name: s(p.basics.name),
+      headline: s(p.basics.headline),
+      email: s(p.basics.email),
+      phone: s(p.basics.phone),
+      location: s(p.basics.location),
+      links: p.basics.links.map((l) => ({ ...l, label: s(l.label) })),
+    },
+    experience: p.experience.map((e) => ({
+      ...e,
+      company: s(e.company),
+      title: s(e.title),
+      location: s(e.location),
+      start: s(e.start),
+      end: s(e.end),
+    })),
+    projects: p.projects.map((x) => ({
+      ...x,
+      name: s(x.name),
+      tech: x.tech.map(s),
+    })),
+    education: p.education.map((e) => ({
+      ...e,
+      school: s(e.school),
+      degree: s(e.degree),
+      field: s(e.field),
+      start: s(e.start),
+      end: s(e.end),
+      location: e.location === undefined ? undefined : s(e.location),
+    })),
+    skills: p.skills.map((g) => ({
+      group: s(g.group),
+      items: g.items.map(s),
+    })),
+    certifications: p.certifications.map((c) => ({
+      ...c,
+      name: s(c.name),
+      issuer: s(c.issuer),
+      year: s(c.year),
+    })),
+  };
+}
+
+/** A highlight line for prompts: markup removed, sub-headings as "Name:". */
+const promptLine = (h: string) =>
+  isHeadingLine(h)
+    ? `  ${stripRichText(headingText(h))}:`
+    : `  - ${stripRichText(h)}`;
+
 /** Plain-text rendering of the profile for prompts (compact, no JSON noise). */
 export function profileToPrompt(p: Profile): string {
   const lines: string[] = [];
@@ -163,17 +226,18 @@ export function profileToPrompt(p: Profile): string {
   lines.push(
     `${b.name}${b.headline ? ` — ${b.headline}` : ""}${b.location ? ` (${b.location})` : ""}`,
   );
-  if (p.summary) lines.push(`Summary: ${p.summary}`);
+  if (p.summary) lines.push(`Summary: ${stripRichText(p.summary)}`);
   for (const e of p.experience) {
     lines.push(
       `Experience: ${e.title} at ${e.company} (${e.start}–${e.end || "Present"})`,
     );
-    for (const h of e.highlights) lines.push(`  - ${h}`);
+    for (const h of e.highlights) lines.push(promptLine(h));
   }
   for (const pr of p.projects) {
     lines.push(
-      `Project: ${pr.name}${pr.tech.length ? ` [${pr.tech.join(", ")}]` : ""}: ${pr.description}`,
+      `Project: ${pr.name}${pr.tech.length ? ` [${pr.tech.join(", ")}]` : ""}: ${stripRichText(pr.description)}`,
     );
+    for (const h of pr.highlights ?? []) lines.push(promptLine(h));
   }
   for (const s of p.skills)
     lines.push(`Skills (${s.group}): ${s.items.join(", ")}`);

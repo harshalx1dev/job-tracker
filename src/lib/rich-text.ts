@@ -59,6 +59,18 @@ function parse(src: string, base: Style, out: RichToken[]) {
       }
     }
     if (ch === "*") {
+      // ***bold italic***: one marker that switches both.
+      if (
+        src.startsWith("***", i) &&
+        ((bold && italic) ||
+          (!bold && !italic && src.indexOf("***", i + 3) > i + 3))
+      ) {
+        flush();
+        bold = !bold;
+        italic = !italic;
+        i += 3;
+        continue;
+      }
       if (src[i + 1] === "*") {
         // Only toggle when it can close, or when a closing marker exists.
         if (bold || src.indexOf("**", i + 2) > i + 2) {
@@ -93,6 +105,75 @@ export function parseRichText(src: string): RichToken[] {
   parse(src ?? "", { bold: false, italic: false }, out);
   return out;
 }
+
+/* ---- editing helpers for the toolbar (pure: text and selection in, text and selection out) ---- */
+
+export type Edit = { value: string; start: number; end: number };
+
+/** Wraps the selection in a marker (** or *), or removes it when already wrapped. */
+export function toggleMarker(
+  value: string,
+  start: number,
+  end: number,
+  marker: "**" | "*",
+): Edit {
+  const m = marker.length;
+  const before = value.slice(0, start);
+  const sel = value.slice(start, end);
+  const after = value.slice(end);
+  // A lone * next to ** belongs to the bold marker, not to italics.
+  const wrappedOutside =
+    before.endsWith(marker) &&
+    after.startsWith(marker) &&
+    (m === 2 || (!before.endsWith("**") && !after.startsWith("**")));
+  if (wrappedOutside)
+    return {
+      value: before.slice(0, -m) + sel + after.slice(m),
+      start: start - m,
+      end: end - m,
+    };
+  return {
+    value: before + marker + sel + marker + after,
+    start: start + m,
+    end: end + m,
+  };
+}
+
+/** Turns the selection into [selection](url). Returns null when the address isn't a usable link. */
+export function applyLink(
+  value: string,
+  start: number,
+  end: number,
+  rawUrl: string,
+): Edit | null {
+  let url = rawUrl.trim();
+  if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(url)) url = `https://${url}`;
+  const href = safeHref(url);
+  if (!href) return null;
+  const label = value.slice(start, end) || href;
+  const link = `[${label}](${href})`;
+  return {
+    value: value.slice(0, start) + link + value.slice(end),
+    start,
+    end: start + link.length,
+  };
+}
+
+/** Adds or removes the "## " sub-heading prefix on the line the caret is in. */
+export function toggleHeading(value: string, caret: number): Edit {
+  const lineStart = value.lastIndexOf("\n", caret - 1) + 1;
+  const hasPrefix = value.startsWith("## ", lineStart);
+  const next = hasPrefix
+    ? value.slice(0, lineStart) + value.slice(lineStart + 3)
+    : value.slice(0, lineStart) + "## " + value.slice(lineStart);
+  const at = Math.max(lineStart, caret + (hasPrefix ? -3 : 3));
+  return { value: next, start: at, end: at };
+}
+
+/** A highlight line that starts a named group of bullets under a role or project. */
+export const HEADING_PREFIX = "## ";
+export const isHeadingLine = (s: string) => s.startsWith(HEADING_PREFIX);
+export const headingText = (s: string) => s.slice(HEADING_PREFIX.length).trim();
 
 /** Removes the markup, keeping the words. */
 export function stripRichText(src: string): string {

@@ -1,10 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Bold,
+  Heading,
+  Italic,
+  Link as LinkIcon,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  applyLink,
+  toggleHeading,
+  toggleMarker,
+  type Edit,
+} from "@/lib/rich-text";
 import { cn } from "@/lib/utils";
 
 export function Field({
@@ -35,30 +50,147 @@ export function TextInput(props: React.ComponentProps<typeof Input>) {
   return <Input {...props} className={cn("h-9", props.className)} />;
 }
 
+/**
+ * A textarea for resume text with a small toolbar (bold, italic, link, and
+ * optionally a sub-heading line). The text stays plain **markup**, so it works
+ * everywhere the resume text does. Ctrl/Cmd + B, I and K do the same as the buttons.
+ */
+export function RichTextarea({
+  value,
+  onChange,
+  rows = 4,
+  placeholder,
+  headings,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  rows?: number;
+  placeholder?: string;
+  /** Show the sub-heading button (for lists of bullets). */
+  headings?: boolean;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  const apply = (edit: (el: HTMLTextAreaElement) => Edit | null) => {
+    const el = ref.current;
+    const r = el && edit(el);
+    if (!el || !r) return;
+    onChange(r.value);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(r.start, r.end);
+    });
+  };
+  const bold = () =>
+    apply((el) =>
+      toggleMarker(el.value, el.selectionStart, el.selectionEnd, "**"),
+    );
+  const italic = () =>
+    apply((el) =>
+      toggleMarker(el.value, el.selectionStart, el.selectionEnd, "*"),
+    );
+  const link = () =>
+    apply((el) => {
+      const url = window.prompt("Link address", "https://");
+      if (!url) return null;
+      const r = applyLink(el.value, el.selectionStart, el.selectionEnd, url);
+      if (!r) window.alert("That doesn't look like a web address.");
+      return r;
+    });
+  const heading = () =>
+    apply((el) => toggleHeading(el.value, el.selectionStart));
+
+  return (
+    // The textarea comes first in the DOM, so the surrounding <label> targets it, not a button.
+    <div className="flex flex-col-reverse gap-1.5">
+      <Textarea
+        ref={ref}
+        rows={rows}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+          const run = { b: bold, i: italic, k: link }[e.key.toLowerCase()];
+          if (!run) return;
+          e.preventDefault();
+          run();
+        }}
+      />
+      <div className="flex gap-0.5">
+        <ToolButton label="Bold (Ctrl+B)" onClick={bold}>
+          <Bold />
+        </ToolButton>
+        <ToolButton label="Italic (Ctrl+I)" onClick={italic}>
+          <Italic />
+        </ToolButton>
+        <ToolButton label="Link (Ctrl+K)" onClick={link}>
+          <LinkIcon />
+        </ToolButton>
+        {headings && (
+          <ToolButton
+            label="Sub-heading for the bullets below (line starts with ##)"
+            onClick={heading}
+          >
+            <Heading />
+          </ToolButton>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ToolButton({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-xs"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  );
+}
+
 /** One entry per line (resume bullets). Keeps the raw text while typing. */
 export function LinesInput({
   value,
   onChange,
   rows = 4,
   placeholder,
+  headings,
 }: {
   value: string[];
   onChange: (v: string[]) => void;
   rows?: number;
   placeholder?: string;
+  headings?: boolean;
 }) {
   const [raw, setRaw] = useState(value.join("\n"));
   return (
-    <Textarea
+    <RichTextarea
       rows={rows}
       value={raw}
       placeholder={placeholder}
-      onChange={(e) => {
-        setRaw(e.target.value);
+      headings={headings}
+      onChange={(text) => {
+        setRaw(text);
         onChange(
-          e.target.value
+          text
             .split("\n")
-            .map((l) => l.replace(/^\s*[-•*]\s*/, "").trim())
+            // Drop a leading bullet symbol, but never the * of **bold** or *italic*.
+            .map((l) => l.replace(/^\s*(?:[-•]\s*|\*\s+)/, "").trim())
             .filter(Boolean),
         );
       }}

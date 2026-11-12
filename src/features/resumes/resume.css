@@ -186,6 +186,17 @@
   padding-left: 1.1em;
   list-style: disc outside;
 }
+.rz-subhead {
+  margin-top: 0.4em;
+  font-weight: 700;
+  break-after: avoid;
+}
+.rz-row + .rz-subhead {
+  margin-top: 0.15em;
+}
+.rz-subhead + .rz-list {
+  margin-top: 0.1em;
+}
 .rz-list li {
   margin-top: 0.12em;
   padding-left: 0;
@@ -297,6 +308,9 @@
   font-size: 0.9em;
   color: var(--rz-muted);
   font-variant-numeric: tabular-nums;
+}
+.rz--modern .rz-subhead {
+  font-weight: 600;
 }
 .rz--modern .rz-list li::marker {
   color: var(--rz-accent);
