@@ -43,13 +43,13 @@ export async function sendEmail(opts: {
   subject: string;
   text: string;
   link: string;
-}) {
+}): Promise<boolean> {
   // The reserved .test domain (RFC 2606) can never receive mail: test and e2e
   // accounts use it. Sending would only bounce back to the sender's inbox.
   if (/\.test$/i.test(opts.to.trim())) {
     if (process.env.NODE_ENV !== "production")
       console.info(`[email] not sent to test address ${opts.to}: ${opts.link}`);
-    return;
+    return false;
   }
   try {
     if (emailTransport === "smtp") {
@@ -59,7 +59,7 @@ export async function sendEmail(opts: {
         subject: opts.subject,
         text: opts.text,
       });
-      return;
+      return true;
     }
     if (emailTransport === "resend") {
       const res = await fetch("https://api.resend.com/emails", {
@@ -79,7 +79,7 @@ export async function sendEmail(opts: {
         throw new Error(
           `Resend ${res.status}: ${await res.text().catch(() => "")}`,
         );
-      return;
+      return true;
     }
     if (process.env.NODE_ENV !== "production") {
       console.log(
@@ -97,4 +97,5 @@ export async function sendEmail(opts: {
       err instanceof Error ? err.message : err,
     );
   }
+  return false;
 }

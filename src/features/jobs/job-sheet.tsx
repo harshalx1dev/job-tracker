@@ -24,6 +24,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { getJobExtras } from "@/server/jobs/contact-actions";
 import type { Contact, JobEvent } from "@/server/db/schema";
+import type { JobApplication } from "@/server/jobs/queries";
+import { ApplicationsSection } from "./applications-section";
 import { ContactsSection } from "./contacts-section";
 import { ClaudeMatchPanel, MatchPanel } from "./match-panel";
 import { JobPrep } from "@/features/prep/job-prep";
@@ -68,6 +70,7 @@ export function JobSheet({
     key: string;
     events: JobEvent[];
     contacts: Contact[];
+    applications: JobApplication[];
     plans: {
       id: string;
       kind: string;
@@ -213,6 +216,12 @@ export function JobSheet({
                   initial={fresh?.plans ?? null}
                 />
               </Section>
+
+              {fresh && fresh.applications.length > 0 && (
+                <Section title="Applications">
+                  <ApplicationsSection list={fresh.applications} />
+                </Section>
+              )}
 
               <Section title="Contacts">
                 <ContactsSection

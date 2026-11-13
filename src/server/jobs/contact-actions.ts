@@ -7,6 +7,7 @@ import { contacts, jobEvents, jobs } from "@/server/db/schema";
 import { requireUser } from "@/server/session";
 import type { ActionResult } from "./actions";
 import { plansForJob } from "@/server/prep/queries";
+import { listApplications } from "./queries";
 
 /** Blank strings become undefined, then the field's own rule applies. */
 const optional = <T extends z.ZodType>(schema: T) =>
@@ -41,7 +42,7 @@ async function ownJob(userId: string, jobId: string) {
 /** Everything the job drawer loads on open: timeline and contacts. */
 export async function getJobExtras(jobId: string) {
   const user = await requireUser();
-  const [events, people, plans] = await Promise.all([
+  const [events, people, plans, applications] = await Promise.all([
     db
       .select()
       .from(jobEvents)
@@ -54,10 +55,12 @@ export async function getJobExtras(jobId: string) {
       .where(and(eq(contacts.jobId, jobId), eq(contacts.userId, user.id)))
       .orderBy(asc(contacts.createdAt)),
     plansForJob(user.id, jobId),
+    listApplications(user.id, jobId),
   ]);
   return {
     events,
     contacts: people,
+    applications,
     plans: plans.map((p) => ({
       id: p.id,
       kind: p.kind,

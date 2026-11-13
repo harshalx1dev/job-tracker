@@ -4,10 +4,13 @@ import { z } from "zod";
 import { outreachSaveSchema } from "@/lib/outreach";
 import type { McpAuth } from "./tokens";
 import { tool } from "./tool";
+import { applicationInputSchema } from "@/lib/application-summary";
 import {
   addJob,
   answerAddSchema,
   claudeMatchSchema,
+  emailSummary,
+  logApplication,
   patchJob,
   saveAnswerEntry,
   saveOutreachDraft,
@@ -152,6 +155,37 @@ export function registerWriteTools(server: McpServer, auth: McpAuth) {
       input: outreachSaveSchema.shape,
     },
     (args, userId) => saveOutreachDraft(userId, args),
+  );
+
+  tool(
+    server,
+    auth,
+    {
+      name: "log_application",
+      title: "Record an application attempt",
+      description:
+        "Records one attempt to apply to a tracked job: where, the outcome, the resume used, and every field and value (submitted: [{field, value}]). Use outcome 'prepared' when you only read the application form and drafted answers for the user to copy and submit themselves: list each question or field with your proposed answer, and for any you have no fact for set missing: true and leave value empty (never guess, e.g. current salary, custom essays); put the apply link in url and name the resume to attach in notes. Use 'applied' only if you really submitted it. For a failure, set failureReason. NEVER include passwords, one-time codes or site login details. Check get_job first: it lists earlier attempts, so you do not apply twice. This does not move the job: call update_job to move it to Applied. Adds a record; never edits one.",
+      scope: "write",
+      input: applicationInputSchema.shape,
+    },
+    (args, userId) => logApplication(userId, args),
+  );
+
+  tool(
+    server,
+    auth,
+    {
+      name: "email_me_summary",
+      title: "Email the user a summary",
+      description:
+        "Emails the signed-in user (always their own address) a summary of the attempts you recorded with log_application: what was applied to, what could not be applied to and why, each with a Trackr link. Pass the application ids from this session. Trackr writes the email from its own records; you may add a short intro. At most 5 a day.",
+      scope: "write",
+      input: {
+        applicationIds: z.array(id).min(1).max(50),
+        intro: z.string().max(500).optional(),
+      },
+    },
+    (args, userId) => emailSummary(userId, args),
   );
 
   tool(

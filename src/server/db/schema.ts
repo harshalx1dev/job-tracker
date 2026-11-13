@@ -425,6 +425,42 @@ export const answers = pgTable(
   (t) => [index("answers_user_idx").on(t.userId, t.updatedAt)],
 );
 
+/** What was submitted when applying to a job: one row per attempt, never edited. */
+export const jobApplications = pgTable(
+  "job_applications",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    platform: text("platform").notNull(),
+    outcome: text("outcome", {
+      enum: ["applied", "failed", "needs_input", "prepared"],
+    }).notNull(),
+    url: text("url"),
+    resumeId: text("resume_id").references(() => resumes.id, {
+      onDelete: "set null",
+    }),
+    /** Kept so the record still reads well if the resume is later deleted. */
+    resumeTitle: text("resume_title"),
+    /** Every field and value sent, e.g. [{ field: "Notice period", value: "..." }]. */
+    submitted: jsonb("submitted")
+      .$type<{ field: string; value: string; missing?: boolean }[]>()
+      .notNull()
+      .default([]),
+    failureReason: text("failure_reason"),
+    notes: text("notes"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("job_applications_user_idx").on(t.userId, t.createdAt),
+    index("job_applications_job_idx").on(t.jobId),
+  ],
+);
+
 /* ───────────────────────────── Interview prep ───────────────────────────── */
 
 /** A curated source of questions (a doc, a site export, a CSV). */

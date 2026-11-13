@@ -1,16 +1,35 @@
 import "server-only";
-import { and, eq, isNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
 import { db } from "@/server/db";
 import {
   answers,
+  jobApplications,
   jobEvents,
   jobs,
+  mcpCalls,
+  mcpTokens,
   outreachMessages,
   resumes,
   statuses,
+  user,
 } from "@/server/db/schema";
+import {
+  applicationInputSchema,
+  buildApplicationSummary,
+} from "@/lib/application-summary";
+import { sendEmail } from "@/server/email";
 import type { JobMatch } from "@/lib/ai-schemas";
 import { answerSaveSchema } from "@/lib/answers";
 import { outreachSaveSchema } from "@/lib/outreach";
@@ -287,6 +306,159 @@ export async function saveResumeVersion(
     .values({ userId, jobId, title, content: valid.data, design })
     .returning({ id: resumes.id });
   return { id: row.id, title, link: appLink(`/app/resumes/${row.id}`) };
+}
+
+/* ------------------------------- applications ------------------------------ */
+
+/** Records what was submitted for one attempt. Adds a row; never edits one. */
+export async function logApplication(userId: string, input: unknown) {
+  const parsed = applicationInputSchema.safeParse(input);
+  if (!parsed.success) throw new ToolError(issues(parsed.error));
+  const a = parsed.data;
+  const job = await assertOwnJob(userId, a.jobId);
+  if (a.outcome === "failed" && !a.failureReason?.trim())
+    throw new ToolError("Say why it failed in failureReason.");
+
+  let resumeTitle: string | null = null;
+  if (a.resumeId) {
+    const resume = await db.query.resumes.findFirst({
+      where: and(eq(resumes.id, a.resumeId), eq(resumes.userId, userId)),
+      columns: { title: true },
+    });
+    if (!resume) throw new ToolError("Resume not found.");
+    resumeTitle = resume.title;
+  }
+
+  const [already] =
+    a.outcome === "applied"
+      ? await db
+          .select({ id: jobApplications.id })
+          .from(jobApplications)
+          .where(
+            and(
+              eq(jobApplications.jobId, job.id),
+              eq(jobApplications.userId, userId),
+              eq(jobApplications.outcome, "applied"),
+            ),
+          )
+          .limit(1)
+      : [];
+
+  const [row] = await db
+    .insert(jobApplications)
+    .values({
+      userId,
+      jobId: job.id,
+      platform: a.platform,
+      outcome: a.outcome,
+      url: a.url ?? null,
+      resumeId: a.resumeId ?? null,
+      resumeTitle,
+      submitted: a.submitted,
+      failureReason: a.failureReason?.trim() || null,
+      notes: a.notes?.trim() || null,
+    })
+    .returning({ id: jobApplications.id });
+  await db.insert(jobEvents).values({
+    jobId: job.id,
+    userId,
+    type: "updated",
+    payload: {
+      via: "claude",
+      application: a.outcome,
+      applicationId: row.id,
+    },
+  });
+  return {
+    id: row.id,
+    link: appLink(`/app/jobs?job=${job.id}`),
+    ...(already
+      ? {
+          warning:
+            "This job already had an applied record. Check you did not apply twice.",
+        }
+      : {}),
+    reminder:
+      a.outcome === "applied"
+        ? "The stage was not changed. Use update_job to move the job to Applied."
+        : a.outcome === "prepared"
+          ? "Saved for the user to copy from Trackr. Do not submit this application."
+          : undefined,
+  };
+}
+
+const MAX_SUMMARY_EMAILS_PER_DAY = 5;
+
+/** Emails a summary to the token owner's own address. The recipient is never an input. */
+export async function emailSummary(
+  userId: string,
+  input: { applicationIds: string[]; intro?: string },
+) {
+  const [sent] = await db
+    .select({ n: count() })
+    .from(mcpCalls)
+    .innerJoin(mcpTokens, eq(mcpTokens.id, mcpCalls.tokenId))
+    .where(
+      and(
+        eq(mcpTokens.userId, userId),
+        eq(mcpCalls.tool, "email_me_summary"),
+        eq(mcpCalls.ok, true),
+        gte(mcpCalls.createdAt, new Date(Date.now() - 86_400_000)),
+      ),
+    );
+  if (sent.n >= MAX_SUMMARY_EMAILS_PER_DAY)
+    throw new ToolError(
+      `At most ${MAX_SUMMARY_EMAILS_PER_DAY} summary emails a day. Try again tomorrow.`,
+    );
+
+  const rows = await db
+    .select({
+      outcome: jobApplications.outcome,
+      platform: jobApplications.platform,
+      failureReason: jobApplications.failureReason,
+      jobId: jobs.id,
+      company: jobs.company,
+      title: jobs.title,
+      location: jobs.location,
+      workMode: jobs.workMode,
+      description: jobs.description,
+    })
+    .from(jobApplications)
+    .innerJoin(jobs, eq(jobs.id, jobApplications.jobId))
+    .where(
+      and(
+        eq(jobApplications.userId, userId),
+        inArray(jobApplications.id, input.applicationIds),
+      ),
+    )
+    .orderBy(asc(jobApplications.createdAt));
+  if (!rows.length)
+    throw new ToolError("None of those application ids were found.");
+
+  const me = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    columns: { email: true },
+  });
+  if (!me) throw new ToolError("User not found.");
+
+  const { subject, text } = buildApplicationSummary({
+    intro: input.intro,
+    items: rows.map((r) => ({
+      ...r,
+      link: appLink(`/app/jobs?job=${r.jobId}`),
+    })),
+  });
+  const delivered = await sendEmail({
+    to: me.email,
+    subject,
+    text,
+    link: appLink("/app/jobs"),
+  });
+  if (!delivered)
+    throw new ToolError(
+      "The email was not sent: email is not configured on this Trackr server (or the address can't receive mail). Tell the user.",
+    );
+  return { sent: true, jobs: rows.length };
 }
 
 /* ------------------------------ drafts, answers ---------------------------- */

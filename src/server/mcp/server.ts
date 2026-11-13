@@ -110,7 +110,7 @@ export function createTrackrServer(auth: McpAuth) {
       name: "list_answers",
       title: "Search the answer bank",
       description:
-        "The user's saved answers to application questions, newest first. Search by words in the question or answer, or filter by tag.",
+        "The user's saved answers to application questions, newest first. Search by words in the question or answer, or filter by tag. Check this before drafting a new answer to an application question, and try a few different keywords because the search matches words, not meaning.",
       scope: "read",
       input: {
         query: z.string().max(100).optional(),

@@ -19,7 +19,7 @@ import {
 } from "@/server/db/schema";
 import { getProfile } from "@/server/profile/queries";
 import { getBackground } from "@/server/profile/question-queries";
-import { getJob } from "@/server/jobs/queries";
+import { getJob, listApplications } from "@/server/jobs/queries";
 import { listStatuses } from "@/server/jobs/statuses";
 
 /*
@@ -135,44 +135,46 @@ export async function readJobs(
 export async function readJob(userId: string, jobId: string) {
   const job = await getJob(userId, jobId);
   if (!job) return null;
-  const [linkedResumes, drafts, linkedAnswers] = await Promise.all([
-    db
-      .select({
-        id: resumes.id,
-        title: resumes.title,
-        updatedAt: resumes.updatedAt,
-      })
-      .from(resumes)
-      .where(and(eq(resumes.jobId, jobId), eq(resumes.userId, userId)))
-      .orderBy(desc(resumes.updatedAt)),
-    db
-      .select({
-        id: outreachMessages.id,
-        channel: outreachMessages.channel,
-        tone: outreachMessages.tone,
-        recipientName: outreachMessages.recipientName,
-        subject: outreachMessages.subject,
-        body: outreachMessages.body,
-        createdAt: outreachMessages.createdAt,
-      })
-      .from(outreachMessages)
-      .where(
-        and(
-          eq(outreachMessages.jobId, jobId),
-          eq(outreachMessages.userId, userId),
-        ),
-      )
-      .orderBy(desc(outreachMessages.createdAt)),
-    db
-      .select({
-        id: answers.id,
-        question: answers.question,
-        answer: answers.answer,
-        tags: answers.tags,
-      })
-      .from(answers)
-      .where(and(eq(answers.jobId, jobId), eq(answers.userId, userId))),
-  ]);
+  const [linkedResumes, drafts, linkedAnswers, applications] =
+    await Promise.all([
+      db
+        .select({
+          id: resumes.id,
+          title: resumes.title,
+          updatedAt: resumes.updatedAt,
+        })
+        .from(resumes)
+        .where(and(eq(resumes.jobId, jobId), eq(resumes.userId, userId)))
+        .orderBy(desc(resumes.updatedAt)),
+      db
+        .select({
+          id: outreachMessages.id,
+          channel: outreachMessages.channel,
+          tone: outreachMessages.tone,
+          recipientName: outreachMessages.recipientName,
+          subject: outreachMessages.subject,
+          body: outreachMessages.body,
+          createdAt: outreachMessages.createdAt,
+        })
+        .from(outreachMessages)
+        .where(
+          and(
+            eq(outreachMessages.jobId, jobId),
+            eq(outreachMessages.userId, userId),
+          ),
+        )
+        .orderBy(desc(outreachMessages.createdAt)),
+      db
+        .select({
+          id: answers.id,
+          question: answers.question,
+          answer: answers.answer,
+          tags: answers.tags,
+        })
+        .from(answers)
+        .where(and(eq(answers.jobId, jobId), eq(answers.userId, userId))),
+      listApplications(userId, jobId),
+    ]);
 
   return {
     id: job.id,
@@ -209,6 +211,8 @@ export async function readJob(userId: string, jobId: string) {
     resumes: linkedResumes,
     outreachDrafts: drafts,
     answers: linkedAnswers,
+    /** Earlier attempts to apply, with everything that was submitted. */
+    applications,
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
   };
