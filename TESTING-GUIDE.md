@@ -54,6 +54,8 @@ something else, note the step number.
   *not available on your key*.
 - [ ] Pick a Flash model → *"Checking … with your key"*, then *"AI features now use …"*. Every AI
   feature uses it (parsing, import, match, outreach, answers). Default is `gemini-3.6-flash`.
+- [ ] **Refresh models** reloads the list and re-tests models marked unavailable. **Model not listed?**
+  accepts any `gemini-…` id; it's tested with your key before it's used.
 - [ ] Replacing or removing the key resets the choice to **Default**.
 
 ### 2.2 Pipeline stages

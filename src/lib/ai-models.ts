@@ -26,9 +26,10 @@ type ListedModel = {
  * computer-use models, which the key also lists but which can't write drafts.
  */
 const DRAFT_MODEL =
-  /^gemini-(?:(\d+(?:\.\d+)?)-)?(pro|flash|flash-lite)(-latest|-preview(?:-[\d-]+)?)?$/;
+  /^gemini-(?:(\d+(?:\.\d+)?)-)?(pro|flash|flash-lite|hydrogen)(-latest|-preview(?:-[\d-]+)?)?$/;
 
-const TIER_RANK = { pro: 0, flash: 1, "flash-lite": 2 } as const;
+// Hydrogen is Gemini 4's free Flash-class model; it sorts with Flash.
+const TIER_RANK = { pro: 0, flash: 1, hydrogen: 1, "flash-lite": 2 } as const;
 
 export function isDraftModelId(id: string) {
   const m = DRAFT_MODEL.exec(id);

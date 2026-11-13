@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -11,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ModelOption } from "@/lib/ai-models";
-import { chooseDraftModel } from "@/server/ai/model-actions";
+import { chooseDraftModel, refreshModels } from "@/server/ai/model-actions";
 import type { ModelPicker } from "@/server/ai/models";
 
 const DEFAULT = "default";
@@ -51,6 +53,8 @@ function Picker({
   const [value, setValue] = useState(selected ?? DEFAULT);
   const [checking, setChecking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [custom, setCustom] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const [, startTransition] = useTransition();
 
   // A saved model the key no longer lists still shows, so the choice is visible.
@@ -65,25 +69,40 @@ function Picker({
   ];
   const usable = options.filter((o) => access[o.id] !== "blocked").length;
 
-  function pick(next: string) {
+  function pick(next: string, isCustom = false) {
     if (next === value) return;
     const previous = value;
     setValue(next);
     setError(null);
     setChecking(next === DEFAULT ? null : next);
     startTransition(async () => {
-      const res = await chooseDraftModel(next === DEFAULT ? null : next);
+      const res = await chooseDraftModel(
+        next === DEFAULT ? null : next,
+        isCustom,
+      );
       setChecking(null);
       if (!res.ok) {
         setValue(previous);
         setError(res.error);
         return;
       }
+      if (isCustom) setCustom("");
       toast.success(
         next === DEFAULT
           ? "AI features use the default model"
           : `AI features now use ${labelOf(next)}`,
       );
+    });
+  }
+
+  function refresh() {
+    setError(null);
+    setRefreshing(true);
+    startTransition(async () => {
+      const res = await refreshModels();
+      setRefreshing(false);
+      if (!res.ok) return void setError(res.error);
+      toast.success(`${res.data.count} models offered by your key`);
     });
   }
 
@@ -160,6 +179,50 @@ function Picker({
         Models your key can&rsquo;t use (for example Pro on a free key) are
         marked and can&rsquo;t be picked.
       </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={refreshing || checking !== null}
+          onClick={refresh}
+        >
+          {refreshing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+          Refresh models
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          Reloads your key&rsquo;s model list and re-tests models marked
+          unavailable.
+        </span>
+      </div>
+      <details className="text-sm">
+        <summary className="cursor-pointer text-xs text-muted-foreground">
+          Model not listed? Enter its id
+        </summary>
+        <form
+          className="mt-2 flex flex-wrap gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const id = custom.trim();
+            if (id) pick(id, true);
+          }}
+        >
+          <Input
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+            placeholder="gemini-…"
+            className="w-full font-mono sm:w-72"
+            aria-label="Model id"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!custom.trim() || checking !== null}
+          >
+            Test and use
+          </Button>
+        </form>
+      </details>
     </div>
   );
 }

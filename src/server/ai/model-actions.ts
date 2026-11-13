@@ -1,6 +1,8 @@
 "use server";
 
+import { eq } from "drizzle-orm";
 import { refresh } from "next/cache";
+import type { ModelOption } from "@/lib/ai-models";
 import { db } from "@/server/db";
 import { aiSettings, aiUsage } from "@/server/db/schema";
 import { requireUser } from "@/server/session";
@@ -15,6 +17,7 @@ import { checkModelAccess, fetchDraftModels, MODEL_ID } from "./models";
  */
 export async function chooseDraftModel(
   modelId: string | null,
+  custom = false,
 ): Promise<AiResult<{ model: string | null }>> {
   const user = await requireUser();
 
@@ -43,21 +46,29 @@ export async function chooseDraftModel(
     return { ok: false, code: e.code, error: e.message };
   }
 
-  const options = await fetchDraftModels(apiKey).catch(() => null);
-  if (!options) {
-    return {
-      ok: false,
-      code: "FAILED",
-      error: "Couldn't load the models for your key. Try again in a moment.",
-    };
-  }
-  const option = options.find((o) => o.id === modelId);
-  if (!option) {
-    return {
-      ok: false,
-      code: "FAILED",
-      error: "Your key doesn't offer this model.",
-    };
+  // A typed-in id skips the list (the list's filter may hide newer model names);
+  // the test call below still proves the key can use it.
+  let option: ModelOption;
+  if (custom) {
+    option = { id: modelId, label: modelId, preview: false };
+  } else {
+    const options = await fetchDraftModels(apiKey).catch(() => null);
+    if (!options) {
+      return {
+        ok: false,
+        code: "FAILED",
+        error: "Couldn't load the models for your key. Try again in a moment.",
+      };
+    }
+    const found = options.find((o) => o.id === modelId);
+    if (!found) {
+      return {
+        ok: false,
+        code: "FAILED",
+        error: "Your key doesn't offer this model.",
+      };
+    }
+    option = found;
   }
 
   const access = await checkModelAccess(apiKey, modelId);
@@ -104,4 +115,33 @@ export async function chooseDraftModel(
     };
   }
   return { ok: true, data: { model: modelId } };
+}
+
+/**
+ * Reloads the models the key offers and forgets earlier "blocked" results, so a
+ * model that was unavailable (or newly released) gets tested again when picked.
+ */
+export async function refreshModels(): Promise<AiResult<{ count: number }>> {
+  const user = await requireUser();
+  let apiKey: string;
+  try {
+    ({ apiKey } = await resolveKey(user));
+  } catch (err) {
+    const e = toAiError(err);
+    return { ok: false, code: e.code, error: e.message };
+  }
+  const options = await fetchDraftModels(apiKey).catch(() => null);
+  if (!options) {
+    return {
+      ok: false,
+      code: "FAILED",
+      error: "Couldn't load the models for your key. Try again in a moment.",
+    };
+  }
+  await db
+    .update(aiSettings)
+    .set({ modelAccess: {}, updatedAt: new Date() })
+    .where(eq(aiSettings.userId, user.id));
+  refresh();
+  return { ok: true, data: { count: options.length } };
 }

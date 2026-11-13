@@ -18,6 +18,7 @@ describe("isDraftModelId", () => {
       "gemini-3.5-flash-lite",
       "gemini-3.1-pro-preview",
       "gemini-3-flash-preview",
+      "gemini-4-hydrogen",
     ])
       expect(isDraftModelId(id), id).toBe(true);
   });
