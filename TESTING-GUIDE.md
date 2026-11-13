@@ -48,8 +48,8 @@ something else, note the step number.
   - Other users see a form: paste a Gemini key → **Test and save**. A wrong key shows
     *"Gemini rejected this API key"*; a good one shows *"Gemini key connected •••• 1234"*.
 
-### 2.1b AI model
-- [ ] **AI model** lists only the Gemini text models your key offers (Pro, Flash, Flash-Lite).
+### 2.1b AI models
+- [ ] Two pickers: **Quick tasks** (resume parsing, job import) and **Writing and judgement** (match, outreach, answers). Each lists only the Gemini text models your key offers (Pro, Flash, Flash-Lite).
 - [ ] Pick a Pro model on a free key → *"Your key can't use …"*; it's then greyed out as
   *not available on your key*.
 - [ ] Pick a Flash model → *"Checking … with your key"*, then *"AI features now use …"*. Every AI

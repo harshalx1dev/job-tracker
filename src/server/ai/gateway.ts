@@ -7,17 +7,23 @@ import { db } from "@/server/db";
 import { aiCredentials, aiSettings, aiUsage } from "@/server/db/schema";
 import type { CurrentUser } from "@/server/session";
 import { modelSchema } from "@/lib/ai-schema";
-import { prefersDefaultTemperature } from "@/lib/ai-models";
+import { prefersDefaultTemperature, type ModelTier } from "@/lib/ai-models";
 import { open } from "./crypto";
 import { AiError, toAiError } from "./errors";
 import { limitVerdict, type KeySource } from "./limits";
 
 /**
- * The fallback model when a user hasn't picked one in Settings: a pinned Flash
- * version that answers reliably on free keys (the "-latest" aliases are often
- * overloaded). Override with GEMINI_MODEL.
+ * The fallback models when a user hasn't picked one in Settings. "smart" does
+ * the writing and judgement; "basic" does extraction, where a light model is
+ * enough and free keys get far more requests a day. Pinned versions, because the
+ * "-latest" aliases are often overloaded. Override with GEMINI_MODEL and
+ * GEMINI_BASIC_MODEL.
  */
-export const MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+export const DEFAULT_MODELS: Record<ModelTier, string> = {
+  smart: process.env.GEMINI_MODEL || "gemini-3.6-flash",
+  basic: process.env.GEMINI_BASIC_MODEL || "gemini-3.5-flash-lite",
+};
+export const MODEL = DEFAULT_MODELS.smart;
 
 export type AiFeature =
   | "parse_resume"
@@ -29,13 +35,19 @@ export type AiFeature =
   | "embed"
   | "test_key";
 
-/** The model picked in Settings (used for every AI feature), else the fallback. */
-export async function modelFor(userId: string) {
+/** Extraction only needs a light model; everything that writes or judges is "smart". */
+const BASIC_FEATURES: AiFeature[] = ["parse_resume", "import_job", "test_key"];
+export const tierOf = (feature: AiFeature): ModelTier =>
+  BASIC_FEATURES.includes(feature) ? "basic" : "smart";
+
+/** The model picked in Settings for this tier, else the fallback. */
+export async function modelFor(userId: string, tier: ModelTier = "smart") {
   const row = await db.query.aiSettings.findFirst({
     where: eq(aiSettings.userId, userId),
-    columns: { draftModel: true },
+    columns: { draftModel: true, basicModel: true },
   });
-  return row?.draftModel || MODEL;
+  const picked = tier === "basic" ? row?.basicModel : row?.draftModel;
+  return picked || DEFAULT_MODELS[tier];
 }
 
 export const EMBEDDING_MODEL = "gemini-embedding-001";
@@ -115,7 +127,8 @@ export async function generateStructured<S extends z.ZodType>(opts: {
   const { apiKey, source } = await resolveKey(opts.user);
   await checkLimit(opts.user.id, source);
   const google = createGoogleGenerativeAI({ apiKey });
-  const model = await modelFor(opts.user.id);
+  const tier = tierOf(opts.feature);
+  const model = await modelFor(opts.user.id, tier);
 
   try {
     const result = await generateText({
@@ -141,7 +154,11 @@ export async function generateStructured<S extends z.ZodType>(opts: {
     });
     return result.output as z.infer<S>;
   } catch (err) {
-    const e = toAiError(err, model !== MODEL, `${opts.feature} on ${model}`);
+    const e = toAiError(
+      err,
+      model !== DEFAULT_MODELS[tier],
+      `${opts.feature} on ${model}`,
+    );
     await logUsage({
       userId: opts.user.id,
       feature: opts.feature,
@@ -202,7 +219,8 @@ export async function testKey(apiKey: string) {
   const google = createGoogleGenerativeAI({ apiKey });
   try {
     await generateText({
-      model: google(MODEL),
+      // The light model: a key check shouldn't spend the scarce daily requests of a full one.
+      model: google(DEFAULT_MODELS.basic),
       prompt: "Reply with the single word OK.",
       maxOutputTokens: 8,
       maxRetries: 0,

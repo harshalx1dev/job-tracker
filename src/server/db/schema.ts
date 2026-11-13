@@ -218,14 +218,16 @@ export const aiCredentials = pgTable("ai_credentials", {
 });
 
 /**
- * Per-user AI choices: the model for outreach and answer drafts, and what test
- * calls found about each model for the current key. Cleared when the key changes.
+ * Per-user AI choices: the model for writing and judgement tasks (draft_model)
+ * and the lighter one for extraction tasks (basic_model), and what test calls
+ * found about each model for the current key. Cleared when the key changes.
  */
 export const aiSettings = pgTable("ai_settings", {
   userId: text("user_id")
     .primaryKey()
     .references(() => user.id, { onDelete: "cascade" }),
   draftModel: text("draft_model"),
+  basicModel: text("basic_model"),
   modelAccess: jsonb("model_access")
     .$type<Record<string, "ok" | "blocked">>()
     .notNull()

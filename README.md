@@ -146,7 +146,8 @@ Add these to `.env.local` (or Vercel) only if you need them:
 
 | Variable | What it does |
 |---|---|
-| `GEMINI_MODEL` | Fallback Gemini model id for users who haven't picked one in Settings (default `gemini-3.6-flash`). [Models](https://ai.google.dev/gemini-api/docs/models) |
+| `GEMINI_MODEL` | Fallback model for writing and judgement tasks (match, outreach, answers, profile questions) when a user hasn't picked one in Settings (default `gemini-3.6-flash`). [Models](https://ai.google.dev/gemini-api/docs/models) |
+| `GEMINI_BASIC_MODEL` | Fallback model for extraction tasks (resume parsing, job import). Default `gemini-3.5-flash-lite`: light, and free keys get far more requests a day with it |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | "Sign in with Google". Callback: `<BETTER_AUTH_URL>/api/auth/callback/google`. [Console](https://console.cloud.google.com/apis/credentials) |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | "Sign in with GitHub". Callback: `<BETTER_AUTH_URL>/api/auth/callback/github`. [OAuth apps](https://github.com/settings/developers) |
 | `PRINT_TOKEN_SECRET` | Signs PDF print links (defaults to `BETTER_AUTH_SECRET`) |

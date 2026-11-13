@@ -4,6 +4,9 @@
  * src/server/ai/models.ts.
  */
 
+/** basic: extraction (resume parsing, job import). smart: writing and judgement. */
+export type ModelTier = "basic" | "smart";
+
 export type ModelOption = {
   /** API id, e.g. "gemini-3.5-flash". */
   id: string;

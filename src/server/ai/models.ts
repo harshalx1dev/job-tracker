@@ -5,12 +5,13 @@ import {
   pickDraftModels,
   type ModelAccess,
   type ModelOption,
+  type ModelTier,
 } from "@/lib/ai-models";
 import { db } from "@/server/db";
 import { aiSettings } from "@/server/db/schema";
 import type { CurrentUser } from "@/server/session";
 import { AiError } from "./errors";
-import { MODEL, resolveKey } from "./gateway";
+import { DEFAULT_MODELS, resolveKey } from "./gateway";
 
 const API = "https://generativelanguage.googleapis.com/v1beta";
 
@@ -64,11 +65,14 @@ export async function checkModelAccess(
 
 export type ModelPicker =
   | { state: "no-key" }
-  | { state: "error"; defaultModel: string }
+  | { state: "error" }
   | {
       state: "ready";
-      defaultModel: string;
-      selected: string | null;
+      /** Per tier: the fallback model and the user's saved pick (null = fallback). */
+      tiers: Record<
+        ModelTier,
+        { defaultModel: string; selected: string | null }
+      >;
       options: ModelOption[];
       access: Record<string, "ok" | "blocked">;
     };
@@ -86,11 +90,19 @@ export async function getModelPicker(user: CurrentUser): Promise<ModelPicker> {
     db.query.aiSettings.findFirst({ where: eq(aiSettings.userId, user.id) }),
     fetchDraftModels(apiKey).catch(() => null),
   ]);
-  if (!options) return { state: "error", defaultModel: MODEL };
+  if (!options) return { state: "error" };
   return {
     state: "ready",
-    defaultModel: MODEL,
-    selected: settings?.draftModel ?? null,
+    tiers: {
+      smart: {
+        defaultModel: DEFAULT_MODELS.smart,
+        selected: settings?.draftModel ?? null,
+      },
+      basic: {
+        defaultModel: DEFAULT_MODELS.basic,
+        selected: settings?.basicModel ?? null,
+      },
+    },
     options,
     access: settings?.modelAccess ?? {},
   };

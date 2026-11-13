@@ -2,7 +2,7 @@
 
 import { eq } from "drizzle-orm";
 import { refresh } from "next/cache";
-import type { ModelOption } from "@/lib/ai-models";
+import type { ModelOption, ModelTier } from "@/lib/ai-models";
 import { db } from "@/server/db";
 import { aiSettings, aiUsage } from "@/server/db/schema";
 import { requireUser } from "@/server/session";
@@ -10,25 +10,29 @@ import { toAiError, type AiResult } from "./errors";
 import { resolveKey } from "./gateway";
 import { checkModelAccess, fetchDraftModels, MODEL_ID } from "./models";
 
+/** Which settings column a tier's pick is stored in. */
+const pickColumn = (tier: ModelTier, model: string | null) =>
+  tier === "basic" ? { basicModel: model } : { draftModel: model };
+
 /**
- * Sets the model for outreach and answer drafts. Only a model this key lists,
- * and only after a tiny test call proves the key can actually use it. Passing
- * null goes back to the default model.
+ * Sets the model for one tier: "basic" (resume parsing, job import) or "smart"
+ * (match scores, outreach, answers, profile questions). Only a model this key
+ * lists (or a typed-in id), and only after a tiny test call proves the key can
+ * actually use it. Passing null goes back to that tier's default model.
  */
 export async function chooseDraftModel(
   modelId: string | null,
   custom = false,
+  tier: ModelTier = "smart",
 ): Promise<AiResult<{ model: string | null }>> {
   const user = await requireUser();
 
   if (modelId === null) {
+    const set = { ...pickColumn(tier, null), updatedAt: new Date() };
     await db
       .insert(aiSettings)
-      .values({ userId: user.id, draftModel: null })
-      .onConflictDoUpdate({
-        target: aiSettings.userId,
-        set: { draftModel: null, updatedAt: new Date() },
-      });
+      .values({ userId: user.id, ...set })
+      .onConflictDoUpdate({ target: aiSettings.userId, set });
     refresh();
     return { ok: true, data: { model: null } };
   }
@@ -99,7 +103,7 @@ export async function chooseDraftModel(
   const modelAccess = { ...(existing?.modelAccess ?? {}), [modelId]: access };
   const set =
     access === "ok"
-      ? { draftModel: modelId, modelAccess, updatedAt: new Date() }
+      ? { ...pickColumn(tier, modelId), modelAccess, updatedAt: new Date() }
       : { modelAccess, updatedAt: new Date() };
   await db
     .insert(aiSettings)
