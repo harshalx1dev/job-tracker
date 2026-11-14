@@ -25,7 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getJobExtras } from "@/server/jobs/contact-actions";
 import type { Contact, JobEvent } from "@/server/db/schema";
 import type { JobApplication } from "@/server/jobs/queries";
-import { ApplicationsSection } from "./applications-section";
+import { ApplyPanel } from "./apply-panel";
 import { ContactsSection } from "./contacts-section";
 import { ClaudeMatchPanel, MatchPanel } from "./match-panel";
 import { JobPrep } from "@/features/prep/job-prep";
@@ -217,9 +217,15 @@ export function JobSheet({
                 />
               </Section>
 
-              {fresh && fresh.applications.length > 0 && (
-                <Section title="Applications">
-                  <ApplicationsSection list={fresh.applications} />
+              {fresh && (
+                <Section title="Apply with AI">
+                  <ApplyPanel
+                    key={job.id}
+                    jobId={job.id}
+                    stageName={statusName(job.statusId)}
+                    applyWithAi={job.applyWithAi}
+                    initial={fresh.applications}
+                  />
                 </Section>
               )}
 

@@ -17,6 +17,7 @@ import {
   resumes,
   statuses,
 } from "@/server/db/schema";
+import { applyReadiness } from "@/lib/apply-readiness";
 import { getProfile } from "@/server/profile/queries";
 import { getBackground } from "@/server/profile/question-queries";
 import { getPreferences } from "@/server/profile/preferences";
@@ -137,6 +138,67 @@ export async function readJobs(
   }));
 }
 
+/**
+ * The jobs the user has asked Claude to apply to. A job is only "eligible" when
+ * the shared rule in lib/apply-readiness says so (right stage, nothing missing,
+ * not already applied); the others come back with the reasons, so Claude can
+ * tell the user instead of guessing.
+ */
+export async function readJobsToApply(userId: string) {
+  const rows = await db
+    .select({
+      id: jobs.id,
+      company: jobs.company,
+      title: jobs.title,
+      url: jobs.url,
+      stage: statuses.name,
+    })
+    .from(jobs)
+    .innerJoin(statuses, eq(statuses.id, jobs.statusId))
+    .where(
+      and(
+        eq(jobs.userId, userId),
+        isNull(jobs.archivedAt),
+        eq(jobs.applyWithAi, true),
+      ),
+    )
+    .orderBy(desc(jobs.updatedAt))
+    .limit(50);
+
+  const eligible: unknown[] = [];
+  const skipped: unknown[] = [];
+  for (const j of rows) {
+    const apps = await listApplications(userId, j.id);
+    const r = applyReadiness({
+      applyWithAi: true,
+      stageName: j.stage,
+      applications: apps,
+    });
+    if (!r.eligible) {
+      skipped.push({
+        jobId: j.id,
+        company: j.company,
+        title: j.title,
+        reasons: r.reasons,
+      });
+      continue;
+    }
+    const prepared = apps.find((a) => a.outcome === "prepared")!; // newest first
+    eligible.push({
+      jobId: j.id,
+      company: j.company,
+      title: j.title,
+      applyUrl: prepared.url ?? j.url,
+      preparedApplicationId: prepared.id,
+      resume: prepared.resumeTitle,
+      resumeId: prepared.resumeId,
+      notes: prepared.notes,
+      answers: prepared.submitted,
+    });
+  }
+  return { eligible, skipped };
+}
+
 export async function readJob(userId: string, jobId: string) {
   const job = await getJob(userId, jobId);
   if (!job) return null;
@@ -199,6 +261,8 @@ export async function readJob(userId: string, jobId: string) {
     notes: job.notes,
     appliedAt: job.appliedAt,
     interviewAt: job.interviewAt,
+    /** True when the user has asked Claude to apply. See list_jobs_to_apply for what is eligible. */
+    applyWithAi: job.applyWithAi,
     /** The match Trackr's own AI produced, if any. */
     trackrMatch: job.match,
     /** The assessment Claude saved, if any. */

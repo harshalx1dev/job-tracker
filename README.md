@@ -44,6 +44,7 @@ Notes:
 | `update_job` | write | Appends a dated note, moves the stage, adds Claude's score, or fills in a missing description |
 | `save_resume_version` | write | Saves a **new** resume with reworded summary, bullets or project text. Companies, titles and dates can't change |
 | `save_outreach_draft`, `save_answer` | write | Adds a new draft or answer-bank entry for you to review in Trackr |
+| `list_jobs_to_apply` | read | The jobs you ticked **Apply with AI** on. *Eligible* ones are in the **Ready to apply** stage with every answer filled in and not yet applied; the rest come back with the reason. Claude applies only to eligible jobs |
 | `log_application` | write | Records an attempt to apply: **applied**, **prepared** (Claude read the form and drafted answers for you to copy and submit yourself, with copy buttons in the job drawer), failed, or needs your input. Shows under **Applications** in the job drawer |
 | `email_me_summary` | write | Emails **you** (never anyone else) a summary of recorded attempts with Trackr links. Needs SMTP or Resend on the server. Max 5 a day |
 

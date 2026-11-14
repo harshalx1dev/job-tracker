@@ -71,6 +71,20 @@ export function createTrackrServer(auth: McpAuth) {
     server,
     auth,
     {
+      name: "list_jobs_to_apply",
+      title: "Jobs the user asked you to apply to",
+      description:
+        "The jobs the user ticked 'Apply with AI'. 'eligible' jobs are in the Ready to apply stage with every answer filled in and not yet applied: for each, open applyUrl, fill the form with the given answers EXACTLY (never change or add facts), attach the resume named in 'resume' if the form asks for one, submit, then call log_application with outcome 'applied' and every field you sent, and update_job to move it to Applied. 'skipped' jobs are NOT to be applied to: tell the user why. Never apply to a job that is not in 'eligible'. If a site asks for a login, a CAPTCHA or a verification code, stop and tell the user instead of continuing.",
+      scope: "read",
+      input: {},
+    },
+    (_args, userId) => read.readJobsToApply(userId),
+  );
+
+  tool(
+    server,
+    auth,
+    {
       name: "get_job",
       title: "Get a job",
       description:

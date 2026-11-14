@@ -35,6 +35,9 @@ export const DEFAULT_STATUSES: {
   kind: "open" | "won" | "lost";
 }[] = [
   { name: "Wishlist", color: "slate", kind: "open" },
+  // Where a job waits once its answers are ready. The Claude connector applies to
+  // jobs in this stage (matched by name: see lib/apply-readiness).
+  { name: "Ready to apply", color: "blue", kind: "open" },
   { name: "Applied", color: "sky", kind: "open" },
   { name: "Assessment", color: "teal", kind: "open" },
   { name: "Interviewing", color: "amber", kind: "open" },

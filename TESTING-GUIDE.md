@@ -120,6 +120,9 @@ something else, note the step number.
 - [ ] **Archive** → the job disappears with an **Undo** toast; Undo brings it back.
 - [ ] **Delete** asks for confirmation.
 
+### 4.4b Apply with AI
+- [ ] Every account has a **Ready to apply** stage (between Wishlist and Applied). In a job's drawer, **Apply with AI** shows a checklist: ticked, stage is Ready to apply, answers prepared, every answer filled in. Answers Claude prepared are editable (**Save answers**); empty ones say *Needs your answer*.
+
 ### 4.5 Match score (needs your profile from step 3)
 - [ ] In the drawer → **Fit with your profile** → **Check my fit**.
   - A score out of 100, a one-line verdict, what you have, what's not shown, and resume edits.

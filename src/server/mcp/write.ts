@@ -359,6 +359,12 @@ export async function logApplication(userId: string, input: unknown) {
       notes: a.notes?.trim() || null,
     })
     .returning({ id: jobApplications.id });
+  // Once applied, the "Apply with AI" request is spent: it can't be run twice.
+  if (a.outcome === "applied")
+    await db
+      .update(jobs)
+      .set({ applyWithAi: false })
+      .where(and(eq(jobs.id, job.id), eq(jobs.userId, userId)));
   await db.insert(jobEvents).values({
     jobId: job.id,
     userId,

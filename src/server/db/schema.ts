@@ -143,6 +143,8 @@ export const jobs = pgTable(
     match: jsonb("match").$type<import("@/lib/ai-schemas").JobMatch>(),
     /** A match assessment saved by Claude through the connector; kept apart from `match`. */
     claudeMatch: jsonb("claude_match").$type<import("@/lib/ai-schemas").JobMatch>(),
+    /** The user has asked Claude to submit this application (see src/lib/apply-readiness.ts). */
+    applyWithAi: boolean("apply_with_ai").notNull().default(false),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
