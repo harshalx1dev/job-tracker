@@ -37,7 +37,7 @@ Notes:
 
 | Tool | Needs | What it does |
 |---|---|---|
-| `get_profile` | read | Your profile plus your answers to "Questions for you", as the source of truth about you |
+| `get_profile` | read | Your profile, your answers to "Questions for you", and your **Preferences** (target roles, locations, work mode, pay, what to skip, jobs per session), as the source of truth about you |
 | `list_statuses`, `list_jobs`, `get_job` | read | Your board stages, jobs, and one job in full (posting, notes, both scores, linked resumes, drafts, answers) |
 | `get_resume`, `list_answers` | read | A resume's content; search your answer bank |
 | `create_job` | write | Adds a lead to your board (posting text, URL, stage, notes, Claude's fit assessment). Skips jobs already tracked (same URL, or same company and title) |

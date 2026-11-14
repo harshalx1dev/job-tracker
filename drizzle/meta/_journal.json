@@ -64,6 +64,13 @@
       "when": 1794603788445,
       "tag": "0008_basic_model",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794681846492,
+      "tag": "0009_job_preferences",
+      "breakpoints": true
     }
   ]
 }

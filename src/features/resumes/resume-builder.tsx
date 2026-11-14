@@ -43,6 +43,7 @@ import {
   RESUME_ACCENTS,
   RESUME_FONTS,
   RESUME_SECTIONS,
+  switchTemplate,
   TEMPLATES,
   type ResumeDesign,
 } from "@/lib/resume";
@@ -448,7 +449,7 @@ function DesignPanel({
               key={t.id}
               type="button"
               aria-pressed={design.template === t.id}
-              onClick={() => setD({ template: t.id, ...t.preset })}
+              onClick={() => setD(switchTemplate(design, t.id))}
               className={cn(
                 "flex items-start justify-between gap-2 rounded-lg border p-2.5 text-left transition-colors hover:bg-surface",
                 design.template === t.id && "border-foreground/40 bg-surface",

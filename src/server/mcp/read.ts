@@ -19,6 +19,7 @@ import {
 } from "@/server/db/schema";
 import { getProfile } from "@/server/profile/queries";
 import { getBackground } from "@/server/profile/question-queries";
+import { getPreferences } from "@/server/profile/preferences";
 import { getJob, listApplications } from "@/server/jobs/queries";
 import { listStatuses } from "@/server/jobs/statuses";
 
@@ -31,13 +32,17 @@ import { listStatuses } from "@/server/jobs/statuses";
 const like = (q: string) => `%${q.replace(/[\\%_]/g, "\\$&")}%`;
 
 export async function readProfile(userId: string) {
-  const [{ profile, saved }, background] = await Promise.all([
-    getProfile(userId),
-    getBackground(userId),
-  ]);
+  const [{ profile, saved }, background, jobSearchPreferences] =
+    await Promise.all([
+      getProfile(userId),
+      getBackground(userId),
+      getPreferences(userId),
+    ]);
   return {
     saved,
     profile,
+    /** What the user wants from a search: roles, places, pay, what to skip, jobs per session. */
+    jobSearchPreferences,
     /** Answers the user gave to "Questions for you", newest first. */
     background,
   };

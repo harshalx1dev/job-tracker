@@ -427,6 +427,17 @@ export const answers = pgTable(
   (t) => [index("answers_user_idx").on(t.userId, t.updatedAt)],
 );
 
+/** Job search preferences (roles, locations, pay, what to avoid). One row per user. */
+export const jobPreferences = pgTable("job_preferences", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  data: jsonb("data")
+    .$type<import("@/lib/preferences").Preferences>()
+    .notNull(),
+  updatedAt: updatedAt(),
+});
+
 /** What was submitted when applying to a job: one row per attempt, never edited. */
 export const jobApplications = pgTable(
   "job_applications",

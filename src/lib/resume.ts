@@ -110,6 +110,8 @@ export const designSchema = z.object({
       RESUME_SECTIONS.map((s) => s.key) as (typeof SECTION_KEYS)[number][],
     ),
   hidden: z.array(z.enum(SECTION_KEYS)).catch([]),
+  /** Each template's look as the user left it, restored when they switch back to it. */
+  looks: z.record(z.string(), z.record(z.string(), z.unknown())).catch({}),
 });
 
 export type ResumeDesign = z.infer<typeof designSchema>;
@@ -180,6 +182,32 @@ export const TEMPLATES: {
     },
   },
 ];
+
+/** The options a template preset sets: the "look" that is kept per template. */
+const LOOK_KEYS = [
+  ...new Set(TEMPLATES.flatMap((t) => Object.keys(t.preset))),
+] as (keyof ResumeDesign)[];
+
+/**
+ * Switches template without losing tweaks: the current look is remembered for
+ * the template being left, and the next template comes back as the user last
+ * left it (or as its preset, the first time).
+ */
+export function switchTemplate(
+  d: ResumeDesign,
+  next: ResumeDesign["template"],
+): ResumeDesign {
+  if (d.template === next) return d;
+  const left = Object.fromEntries(LOOK_KEYS.map((k) => [k, d[k]]));
+  const target =
+    d.looks[next] ?? TEMPLATES.find((t) => t.id === next)?.preset ?? {};
+  return normalizeDesign({
+    ...d,
+    ...target,
+    template: next,
+    looks: { ...d.looks, [d.template]: left },
+  });
+}
 
 /** Page size in CSS pixels (96 dpi). */
 export function pageSize(design: ResumeDesign) {

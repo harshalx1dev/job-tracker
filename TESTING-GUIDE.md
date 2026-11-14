@@ -87,6 +87,11 @@ something else, note the step number.
 
 ---
 
+### 3.2 Preferences (sidebar → Preferences)
+- [ ] Fill target roles, locations, work mode, pay, what to skip and jobs per session → **Save preferences** → reload: everything is still there. Claude reads it through `get_profile`.
+
+---
+
 ## 4. Jobs (sidebar → Jobs)
 
 ### 4.1 Add a job with AI import

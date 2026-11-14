@@ -6,6 +6,7 @@ import {
   MessageSquareQuote,
   Send,
   Settings,
+  SlidersHorizontal,
   UserRound,
 } from "lucide-react";
 
@@ -13,6 +14,12 @@ export const NAV_ITEMS = [
   { href: "/app", label: "Dashboard", icon: LayoutDashboard, soon: false },
   { href: "/app/jobs", label: "Jobs", icon: BriefcaseBusiness, soon: false },
   { href: "/app/profile", label: "Profile", icon: UserRound, soon: false },
+  {
+    href: "/app/preferences",
+    label: "Preferences",
+    icon: SlidersHorizontal,
+    soon: false,
+  },
   { href: "/app/resumes", label: "Resumes", icon: FileText, soon: false },
   { href: "/app/outreach", label: "Outreach", icon: Send, soon: false },
   {
