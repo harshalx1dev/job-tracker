@@ -58,12 +58,12 @@ export function PreferencesForm({ initial }: { initial: Preferences }) {
                 type="button"
                 aria-pressed={on}
                 onClick={() =>
-                  set(
-                    "workModes",
-                    on
-                      ? p.workModes.filter((x) => x !== m)
-                      : [...p.workModes, m],
-                  )
+                  setP((cur) => ({
+                    ...cur,
+                    workModes: cur.workModes.includes(m)
+                      ? cur.workModes.filter((x) => x !== m)
+                      : [...cur.workModes, m],
+                  }))
                 }
                 className={cn(
                   "rounded-full border px-3 py-1 text-sm transition-colors",
