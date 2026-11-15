@@ -6,18 +6,13 @@ A ready-made workspace so Claude runs your job search with real `/` commands. Cl
 
 1. **Copy this folder** somewhere on your computer, for example `~/job-search`.
 2. **Create a Trackr token** with **Let Claude add things** ticked (Trackr → Settings → Claude connector).
-3. **Connect Trackr to Claude Code.** The kit's `.mcp.json` already declares the server and reads your site address and token from two environment variables, so the token is never written into a file. Set them, then restart Claude Desktop (or your terminal):
+3. **Connect Trackr to Claude Code.** Open the kit's `.mcp.json` in any text editor and replace two values:
+   - `YOUR-TRACKR-SITE` with your Trackr site address (for example `my-trackr.vercel.app`);
+   - `trk_PASTE_YOUR_TOKEN_HERE` with your token (keep the word `Bearer` and the space in front of it).
 
-   - **Windows (PowerShell):**
+   Save the file. The first time you open the folder, Claude Code asks you to approve the project's `trackr` server. Run `/mcp` to check it is connected.
 
-     ```powershell
-     setx TRACKR_URL "https://<your-trackr-site>"
-     setx TRACKR_TOKEN "trk_..."
-     ```
-
-   - **macOS or Linux:** add `export TRACKR_URL="https://<your-trackr-site>"` and `export TRACKR_TOKEN="trk_..."` to your shell profile and start Claude Code from that terminal. (Claude Desktop only sees variables from the environment it was launched in.)
-
-   Use the Server URL's site address (without `/api/mcp`) and the token from Trackr. The first time you open the folder, Claude Code asks you to approve the project's `trackr` server. Run `/mcp` to check it is connected.
+   The token is stored in that file on your computer, so keep the folder private: don't share it or put it in a public repository. (The kit's `.gitignore` already excludes `.mcp.json`.) If you'd rather not store the token in a file, replace the two values with `${TRACKR_URL}` and `${TRACKR_TOKEN}` (as `"url": "${TRACKR_URL}/api/mcp"` and `"Authorization": "Bearer ${TRACKR_TOKEN}"`) and set those two environment variables before starting Claude Code. A token can be revoked in Trackr at any time.
 
    *Prefer a command? From the folder, `claude mcp add --transport http trackr https://<your-trackr-site>/api/mcp --header "Authorization: Bearer trk_..."` does the same.* The server must be named `trackr`, because `.claude/settings.json` pre-approves the read tools by that name.
 4. **Give Claude a browser.** Install the **Claude in Chrome** extension, and sign in to LinkedIn, Naukri, Indeed and so on yourself, in Chrome. Claude never types your passwords.

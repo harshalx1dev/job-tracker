@@ -1,0 +1,2 @@
+# Holds your Trackr token once you fill it in: never commit or share it.
+.mcp.json
