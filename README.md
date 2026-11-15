@@ -20,18 +20,51 @@ AI features use each user's **own Gemini key** (saved encrypted); the app's key 
 
 ## Use Trackr with Claude
 
-Trackr runs a remote MCP server at `/api/mcp`. Add it to Claude (Desktop, web or mobile) as a custom connector and Claude can work on your live Trackr: find and score jobs, put the good ones on your board, polish drafts, and answer from your real profile. It runs on your own Claude subscription: Trackr makes no AI calls for this, and nothing needs to be installed.
+Trackr runs a remote MCP server at `/api/mcp`. Add it to Claude as a custom connector and Claude can run your search for you: find and score jobs, put the good ones on your board, read each application form and prepare answers from your real profile, and, for the jobs you approve, submit the application and record exactly what it sent. It runs on your own Claude subscription: Trackr makes no AI calls for this.
+
+Claude learns how to behave from a **playbook** that Trackr serves to it (the `get_playbook` tool; a readable copy is in [docs/claude-playbook.md](docs/claude-playbook.md)). You give it one short starting prompt, then use one-line commands.
 
 ### Set up (about 5 minutes)
 
 1. **Create a token.** In Trackr, open **Settings → Claude connector → Create token**. Name it, leave it **read-only** for now, and click Create. Copy the **Header value** (it starts with `Bearer `) and the **Server URL**. They are shown once.
 2. **Add the connector in Claude.** Go to **Customize → Connectors → Add custom connector**. Name it `Trackr`, paste the Server URL, and click Continue. Set **Authentication** to **No sign-in**. Under **Request headers**, add a header named `authorization` with the Header value you copied (include the word `Bearer` and the space), mark it Required, and click Add.
-3. **Try it.** Start a chat, turn the Trackr connector on (**+ → Connectors**), and ask: *"List my Trackr jobs and read my Trackr profile."*
-4. **Allow writing, when you want it.** Create a second token with **Let Claude add things** ticked, remove the connector in Claude, and add it again with the new value (Claude can't edit a header after saving).
+3. **Try it read-only.** Start a chat, turn the Trackr connector on (**+ → Connectors**), and ask: *"List my Trackr jobs and read my Trackr profile."*
+4. **Allow writing.** The search and apply workflows add jobs and records, so they need a token with **Let Claude add things** ticked. Create it, remove the connector in Claude, and add it again with the new value (Claude can't edit a header after saving).
+5. **Give Claude a browser.** To search and apply on LinkedIn, Naukri, Indeed and company sites, Claude needs to browse as you. Use **Claude Desktop with the Claude in Chrome extension** and sign in to those sites yourself in Chrome. Claude never types your passwords, and it stops for a CAPTCHA or a verification code.
+6. **Prepare Trackr** (see [Get the best results](#get-the-best-results)): complete your profile, fill **Preferences**, and add reusable answers to the **Answer bank**.
 
 Notes:
 - **Request headers** is a beta feature in Claude and may not appear on every plan ([details](https://claude.com/docs/connectors/custom/add-unlisted)). If you don't see it, use the Claude Desktop bridge under Troubleshooting.
 - **Everyone adds their own connector with their own token.** Never share a token, and don't add the connector for a whole organization (everyone would share one token and one account's data).
+
+### Start a session
+
+Open a new chat in Claude with the Trackr connector on, and send this **starting prompt** once:
+
+```text
+Use the Trackr connector. Call get_playbook, read it fully, then follow its Setup steps:
+load my profile, job search preferences, jobs, answers and resumes, ask me which resume
+to use, and give me a short summary of what you found and any gaps. Don't search or
+apply until I give you a command.
+```
+
+Claude reads the playbook, loads everything about you from Trackr, asks which resume to attach, and tells you what is missing. After that, the commands below are all you need. (If your Claude plan has **Projects**, paste the starting prompt into a Project's instructions, and every chat in that Project starts ready.)
+
+### Commands
+
+| Say | What Claude does |
+|---|---|
+| `Run job search` | Searches for jobs that match your Preferences, adds good ones to your Wishlist with a fit score, reads the application form of each job scoring 70 or more and saves drafted answers (never submitting), then emails you a summary |
+| `Run apply` | Applies only to jobs that are **Ready to apply**, have **Apply with AI** ticked and have no missing answers; records what it sent and moves them to Applied; emails you a summary |
+| `Find HR email jobs` | Finds posts that give an HR email address, adds the job and saves a drafted email for you to read and send yourself. It never sends |
+| `Status` | Counts of your jobs per stage and what is waiting on you |
+
+### How a day works
+
+1. **You:** `Run job search`.
+2. **Claude:** adds jobs and prepares answers. You get an email with a Trackr link for each job.
+3. **You, in Trackr:** open a job, fill in anything marked *Needs your answer*, and check the answers. When you're happy, move the job to **Ready to apply** and tick **Apply with AI**. Jobs you'd rather do by hand: copy the answers (each has a copy button) and apply yourself.
+4. **You:** `Run apply`. Claude applies to the approved jobs and tells you what it did. A job with a gap is skipped and listed, never guessed at.
 
 ### What Claude can do
 
@@ -39,7 +72,8 @@ Notes:
 |---|---|---|
 | `get_profile` | read | Your profile, your answers to "Questions for you", and your **Preferences** (target roles, locations, work mode, pay, what to skip, jobs per session), as the source of truth about you |
 | `list_statuses`, `list_jobs`, `get_job` | read | Your board stages, jobs, and one job in full (posting, notes, both scores, linked resumes, drafts, answers) |
-| `get_resume`, `list_answers` | read | A resume's content; search your answer bank |
+| `get_playbook` | read | The playbook Claude follows: rules, setup steps and the commands |
+| `list_resumes`, `get_resume`, `list_answers` | read | Your resumes and a resume's content; search your answer bank |
 | `create_job` | write | Adds a lead to your board (posting text, URL, stage, notes, Claude's fit assessment). Skips jobs already tracked (same URL, or same company and title) |
 | `update_job` | write | Appends a dated note, moves the stage, adds Claude's score, or fills in a missing description |
 | `save_resume_version` | write | Saves a **new** resume with reworded summary, bullets or project text. Companies, titles and dates can't change |
@@ -48,7 +82,21 @@ Notes:
 | `log_application` | write | Records an attempt to apply: **applied**, **prepared** (Claude read the form and drafted answers for you to copy and submit yourself, with copy buttons in the job drawer), failed, or needs your input. Shows under **Applications** in the job drawer |
 | `email_me_summary` | write | Emails **you** (never anyone else) a summary of recorded attempts with Trackr links. Needs SMTP or Resend on the server. Max 5 a day |
 
+### Get the best results
+
+Claude can only be as good as what Trackr knows about you, and it never invents facts, so gaps become "Needs your answer" instead of finished applications.
+
+- **Complete your profile**, and answer the AI's **Questions for you** on the Profile page. Specific numbers and stories make better answers.
+- **Fill Preferences** (sidebar): target roles, locations, work modes, pay, what to skip, and the jobs-per-session limit. The **Anything else** box is read by Claude as guidance: say what makes a job a fit or a no, and which skills you do or don't want claimed.
+- **Fill the Answer bank** with the questions every form asks: notice period, current and expected pay, location, why you're leaving, a conflict story, your best project. Claude reuses them.
+- **Keep one resume accurate** and tell Claude to use it. It will not change a resume you wrote.
+- **Start small.** Run the search for a few days with the default of 5 jobs, read what it prepared, and only then use `Run apply`.
+- **Check the email.** Summary emails need SMTP or Resend on the server (see [Optional settings](#optional-settings)).
+- **Know the risk.** Many job sites' terms restrict automated applying, and accounts can be limited. You are responsible for how you use it. Go at a human pace.
+
 ### Example prompts
+
+These work on top of the commands:
 
 - **Find and add jobs:** *"Search for remote React roles posted this week that fit my Trackr profile. Score each 0 to 100 against my profile, and add the ones above 75 to my Wishlist with the posting text, URL and your assessment."* (Searching the web uses Claude's own search tools.)
 - **Polish a draft:** *"Open my Acme job in Trackr, read my profile and the posting, and save a tailored resume version. Only reword what's already true; don't add anything."*
@@ -59,6 +107,7 @@ Review what Claude adds in Trackr: new resumes show up on the Resumes page (titl
 ### Safety
 
 - **Claude only adds.** It can't delete or archive anything, edit your profile, or overwrite a resume, draft, answer or note you wrote. Its own score is kept separate from Trackr's.
+- **It submits only what you approved.** `Run apply` acts only on jobs that are in Ready to apply, have Apply with AI ticked and have every answer filled in. Trackr decides that (`list_jobs_to_apply`), not Claude. An applied job can't be applied to twice.
 - **Tokens are yours to control.** They're shown once, stored only as a hash, read-only unless you tick write, expire after 90 days by default, and can be revoked in Settings (it takes effect immediately). Each token only ever sees its owner's data, and calls are limited to 60 a minute.
 - **Job postings are untrusted text.** A malicious posting could try to steer Claude. Keep Claude's per-call approval on for write tools, start with a read-only token, and check what it added.
 - **Treat a token like a password.** Don't paste it into chats or commit it.
@@ -83,7 +132,7 @@ Review what Claude adds in Trackr: new resumes show up on the Resumes page (titl
 
 ### Running your own Trackr
 
-Apply the migrations to production before deploying (see [Deploying](#deploying-vercel--neon)); the connector needs `mcp_tokens`, `mcp_calls` and `jobs.claude_match`. `BETTER_AUTH_URL` must be your site's public URL (Settings shows the Server URL from it). Claude calls from Anthropic's servers, so the production domain must be reachable from the internet (no Vercel Deployment Protection on it).
+Apply the migrations to production before deploying (see [Deploying](#deploying-vercel--neon)); the connector needs `mcp_tokens`, `mcp_calls`, `job_applications`, `job_preferences`, `jobs.claude_match` and `jobs.apply_with_ai`. `BETTER_AUTH_URL` must be your site's public URL (Settings shows the Server URL from it). Claude calls from Anthropic's servers, so the production domain must be reachable from the internet (no Vercel Deployment Protection on it).
 
 ## Stack
 

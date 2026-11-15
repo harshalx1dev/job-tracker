@@ -51,6 +51,13 @@ export function registerWriteTools(server: McpServer, auth: McpAuth) {
         skills: z.array(z.string().min(1).max(40)).max(40).optional(),
         priority: z.enum(["low", "medium", "high"]).optional(),
         notes: z.string().max(10_000).optional(),
+        source: z
+          .string()
+          .max(60)
+          .optional()
+          .describe(
+            "Where you found it, e.g. LinkedIn, Naukri; defaults to Claude",
+          ),
         status: z
           .string()
           .max(60)

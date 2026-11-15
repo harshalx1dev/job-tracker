@@ -1,6 +1,7 @@
 import "server-only";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { PLAYBOOK } from "@/lib/claude-playbook";
 import type { McpAuth } from "./tokens";
 import * as read from "./read";
 import { ToolError, tool } from "./tool";
@@ -11,7 +12,27 @@ const limit = z.number().int().min(1).max(50).optional();
 
 /** A server for one request, bound to the token's owner. */
 export function createTrackrServer(auth: McpAuth) {
-  const server = new McpServer({ name: "trackr", version: "1.0.0" });
+  const server = new McpServer(
+    { name: "trackr", version: "1.0.0" },
+    {
+      instructions:
+        "Trackr is the user's job-search workspace. Call get_playbook first and follow it: it says what you may do, the workflows, and the commands the user will give you.",
+    },
+  );
+
+  tool(
+    server,
+    auth,
+    {
+      name: "get_playbook",
+      title: "Read the Trackr playbook",
+      description:
+        "How to work with Trackr: the rules, the setup steps, the commands the user will give you (Run job search, Run apply, Find HR email jobs, Status) and what each does. Read it fully at the start of every session.",
+      scope: "read",
+      input: {},
+    },
+    async () => ({ playbook: PLAYBOOK }),
+  );
 
   tool(
     server,
@@ -97,6 +118,20 @@ export function createTrackrServer(auth: McpAuth) {
       if (!job) throw new ToolError("Job not found.");
       return job;
     },
+  );
+
+  tool(
+    server,
+    auth,
+    {
+      name: "list_resumes",
+      title: "List my resumes",
+      description:
+        "The user's resumes, newest first (id, title, linked job). Use it to find which resume to attach, then get_resume for the content.",
+      scope: "read",
+      input: {},
+    },
+    (_args, userId) => read.readResumes(userId),
   );
 
   tool(

@@ -287,6 +287,21 @@ export async function readJob(userId: string, jobId: string) {
   };
 }
 
+/** The user's resumes (newest first), so Claude can name one to attach. */
+export async function readResumes(userId: string) {
+  return db
+    .select({
+      id: resumes.id,
+      title: resumes.title,
+      jobId: resumes.jobId,
+      updatedAt: resumes.updatedAt,
+    })
+    .from(resumes)
+    .where(eq(resumes.userId, userId))
+    .orderBy(desc(resumes.updatedAt))
+    .limit(50);
+}
+
 export async function readResume(userId: string, resumeId: string) {
   const row = await db.query.resumes.findFirst({
     where: and(eq(resumes.id, resumeId), eq(resumes.userId, userId)),
