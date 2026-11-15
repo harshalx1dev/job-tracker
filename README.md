@@ -47,9 +47,9 @@ Notes:
 | Instructions | `CLAUDE.md` loads by itself | You paste a starting prompt (a Project can hold it) |
 | Control | Each write and browser action asks first, until you approve it | Less fine-grained |
 | Browser | Claude in Chrome, signed in as you | Depends on your plan and setup |
-| Setup | Copy a folder, edit two values in one file | Add the connector in settings |
+| Setup | Download the kit after creating a token | Add the connector in settings |
 
-**Set up Claude Code** with the ready-made kit in [docs/claude-code-kit](docs/claude-code-kit): copy the folder, edit two values in its `.mcp.json` (your site address and token), so no terminal command is needed, and you get these commands:
+**Set up Claude Code** with the ready-made kit. In Trackr, create a token (Settings → Claude connector), then click **Download starter kit**: you get a folder with your site address and token already inside, so there is nothing to edit. Unzip it, open it in Claude Code, and you get these commands. (The same kit, with placeholders to fill in by hand, is in [docs/claude-code-kit](docs/claude-code-kit).)
 
 | Command | What Claude does |
 |---|---|

@@ -133,6 +133,11 @@ something else, note the step number.
 
 ---
 
+### 4.7 Claude Code kit
+- [ ] Settings → Claude connector: no kit button until you create a token. After **Create token**, **Download starter kit** gives `trackr-job-search.zip`; its `.mcp.json` holds your server address and the new token.
+
+---
+
 ## 5. Dashboard (sidebar → Dashboard)
 
 - [ ] Tiles: active applications, sent this week, response rate, offers.

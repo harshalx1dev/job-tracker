@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Copy, Loader2, Plug } from "lucide-react";
+import { Check, Copy, Download, Loader2, Plug } from "lucide-react";
+import { strToU8, zipSync } from "fflate";
 import { toast } from "sonner";
 import { RelativeTime } from "@/components/relative-time";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { buildKit, KIT_FOLDER } from "@/lib/claude-kit";
 import { DEFAULT_EXPIRY_DAYS, hasScope, tokenState } from "@/lib/mcp-token";
 import { createMcpToken, revokeMcpToken } from "@/server/mcp/token-actions";
 import type { PublicToken } from "@/server/mcp/tokens";
@@ -34,6 +36,27 @@ async function copy(text: string, what: string) {
   }
 }
 
+/** Builds the starter kit in the browser, with the token inside, and saves it as a .zip. The token never leaves the page. */
+function downloadKit(endpoint: string, token: string) {
+  const files = buildKit({ endpoint, token });
+  const zipped = zipSync(
+    Object.fromEntries(
+      Object.entries(files).map(([path, text]) => [
+        `${KIT_FOLDER}/${path}`,
+        strToU8(text),
+      ]),
+    ),
+  );
+  const url = URL.createObjectURL(
+    new Blob([new Uint8Array(zipped)], { type: "application/zip" }),
+  );
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${KIT_FOLDER}.zip`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 /**
  * Tokens for the Claude connector. The token is shown once, right after it is
  * created, and only its hash is stored. Anyone holding it can do what its scope
@@ -50,6 +73,7 @@ export function McpTokenCard({
   const [write, setWrite] = useState(false);
   const [days, setDays] = useState(String(DEFAULT_EXPIRY_DAYS));
   const [created, setCreated] = useState<string | null>(null);
+  const [createdCanWrite, setCreatedCanWrite] = useState(false);
   const [creating, startCreate] = useTransition();
   const [revoking, startRevoke] = useTransition();
 
@@ -63,6 +87,7 @@ export function McpTokenCard({
       });
       if (!res.ok) return void toast.error(res.error);
       setCreated(res.data.token);
+      setCreatedCanWrite(write);
       setWrite(false);
     });
   }
@@ -79,6 +104,24 @@ export function McpTokenCard({
             value={`Bearer ${created}`}
           />
           <CopyRow label="Server URL" value={endpoint} />
+          <div className="space-y-2 rounded-lg border bg-background p-3">
+            <p className="text-sm font-medium">Using Claude Code?</p>
+            <p className="text-xs text-muted-foreground">
+              Download a ready-to-use folder with this token already inside.
+              Unzip it, open it in Claude Code, and run{" "}
+              <code>/trackr-start</code>. The folder holds your token, so keep
+              it private and delete the .zip afterwards.
+              {!createdCanWrite &&
+                " This token is read-only: searching and applying need a token with “Let Claude add things” ticked."}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => downloadKit(endpoint, created)}
+            >
+              <Download /> Download starter kit
+            </Button>
+          </div>
           <Button variant="outline" size="sm" onClick={() => setCreated(null)}>
             <Check /> I&rsquo;ve copied it
           </Button>
@@ -114,7 +157,7 @@ export function McpTokenCard({
                       : state === "expired"
                         ? "Expired"
                         : t.expiresAt
-                          ? `Expires ${t.expiresAt.toLocaleDateString()}`
+                          ? `Expires ${t.expiresAt.toLocaleDateString("en-GB", { timeZone: "UTC", day: "numeric", month: "short", year: "numeric" })}`
                           : "Never expires"}{" "}
                     ·{" "}
                     {t.lastUsedAt ? (
