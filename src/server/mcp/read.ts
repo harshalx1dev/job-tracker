@@ -2,6 +2,7 @@ import "server-only";
 import {
   and,
   arrayContains,
+  count,
   desc,
   eq,
   ilike,
@@ -57,85 +58,106 @@ export async function readStatuses(userId: string) {
   }));
 }
 
+/** Up to 50 answers, newest first, with the full count so Claude knows when it is seeing only part of them. */
 export async function readAnswers(
   userId: string,
   opts: { query?: string; tag?: string; limit?: number } = {},
 ) {
-  const rows = await db
-    .select({
-      id: answers.id,
-      question: answers.question,
-      answer: answers.answer,
-      tags: answers.tags,
-      jobId: answers.jobId,
-      wordLimit: answers.wordLimit,
-      updatedAt: answers.updatedAt,
-    })
-    .from(answers)
-    .where(
-      and(
-        eq(answers.userId, userId),
-        opts.query
-          ? or(
-              ilike(answers.question, like(opts.query)),
-              ilike(answers.answer, like(opts.query)),
-            )
-          : undefined,
-        opts.tag ? arrayContains(answers.tags, [opts.tag]) : undefined,
-      ),
-    )
-    .orderBy(desc(answers.updatedAt))
-    .limit(Math.min(opts.limit ?? 25, 50));
-  return rows;
+  const where = and(
+    eq(answers.userId, userId),
+    opts.query
+      ? or(
+          ilike(answers.question, like(opts.query)),
+          ilike(answers.answer, like(opts.query)),
+        )
+      : undefined,
+    opts.tag ? arrayContains(answers.tags, [opts.tag]) : undefined,
+  );
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select({
+        id: answers.id,
+        question: answers.question,
+        answer: answers.answer,
+        tags: answers.tags,
+        jobId: answers.jobId,
+        wordLimit: answers.wordLimit,
+        updatedAt: answers.updatedAt,
+      })
+      .from(answers)
+      .where(where)
+      .orderBy(desc(answers.updatedAt))
+      .limit(Math.min(opts.limit ?? 50, 50)),
+    db.select({ total: count() }).from(answers).where(where),
+  ]);
+  return {
+    total,
+    returned: rows.length,
+    truncated: total > rows.length,
+    answers: rows,
+  };
 }
 
+/** Up to 50 jobs, newest activity first, with the full count. */
 export async function readJobs(
   userId: string,
   opts: { status?: string; query?: string; limit?: number } = {},
 ) {
-  const rows = await db
-    .select({
-      id: jobs.id,
-      company: jobs.company,
-      title: jobs.title,
-      status: statuses.name,
-      location: jobs.location,
-      workMode: jobs.workMode,
-      url: jobs.url,
-      source: jobs.source,
-      priority: jobs.priority,
-      appliedAt: jobs.appliedAt,
-      interviewAt: jobs.interviewAt,
-      match: jobs.match,
-      claudeMatch: jobs.claudeMatch,
-      updatedAt: jobs.updatedAt,
-    })
-    .from(jobs)
-    .innerJoin(statuses, eq(statuses.id, jobs.statusId))
-    .where(
-      and(
-        eq(jobs.userId, userId),
-        isNull(jobs.archivedAt),
-        opts.status
-          ? sql`lower(${statuses.name}) = ${opts.status.toLowerCase()}`
-          : undefined,
-        opts.query
-          ? or(
-              ilike(jobs.company, like(opts.query)),
-              ilike(jobs.title, like(opts.query)),
-            )
-          : undefined,
-      ),
-    )
-    .orderBy(desc(jobs.updatedAt))
-    .limit(Math.min(opts.limit ?? 25, 50));
+  const where = and(
+    eq(jobs.userId, userId),
+    isNull(jobs.archivedAt),
+    opts.status
+      ? sql`lower(${statuses.name}) = ${opts.status.toLowerCase()}`
+      : undefined,
+    opts.query
+      ? or(
+          ilike(jobs.company, like(opts.query)),
+          ilike(jobs.title, like(opts.query)),
+        )
+      : undefined,
+  );
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select({
+        id: jobs.id,
+        company: jobs.company,
+        title: jobs.title,
+        status: statuses.name,
+        location: jobs.location,
+        workMode: jobs.workMode,
+        url: jobs.url,
+        source: jobs.source,
+        priority: jobs.priority,
+        appliedAt: jobs.appliedAt,
+        interviewAt: jobs.interviewAt,
+        match: jobs.match,
+        claudeMatch: jobs.claudeMatch,
+        updatedAt: jobs.updatedAt,
+      })
+      .from(jobs)
+      .innerJoin(statuses, eq(statuses.id, jobs.statusId))
+      .where(where)
+      .orderBy(desc(jobs.updatedAt))
+      .limit(Math.min(opts.limit ?? 50, 50)),
+    db
+      .select({ total: count() })
+      .from(jobs)
+      .innerJoin(statuses, eq(statuses.id, jobs.statusId))
+      .where(where),
+  ]);
 
   // Scores only, no assessments: get_job has the full detail.
-  return rows.map(({ match, claudeMatch, ...job }) => ({
+  const list = rows.map(({ match, claudeMatch, ...job }) => ({
     ...job,
     trackrScore: match?.score ?? null,
     claudeScore: claudeMatch?.score ?? null,
   }));
+  return {
+    total,
+    returned: list.length,
+    truncated: total > list.length,
+    jobs: list,
+  };
 }
 
 /**

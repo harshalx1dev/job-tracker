@@ -69,7 +69,7 @@ export function createTrackrServer(auth: McpAuth) {
       name: "list_jobs",
       title: "List tracked jobs",
       description:
-        "The user's tracked jobs, newest activity first, without descriptions. Filter by stage name or a company/title search. Use get_job for the full details.",
+        "The user's tracked jobs, newest activity first, without descriptions. Returns up to 50 with the full count (total, returned, truncated): if truncated is true, narrow with status or query. Filter by stage name or a company/title search. Use get_job for the full details.",
       scope: "read",
       input: {
         status: z
@@ -159,7 +159,7 @@ export function createTrackrServer(auth: McpAuth) {
       name: "list_answers",
       title: "Search the answer bank",
       description:
-        "The user's saved answers to application questions, newest first. Search by words in the question or answer, or filter by tag. Check this before drafting a new answer to an application question, and try a few different keywords because the search matches words, not meaning.",
+        "The user's saved answers to application questions, newest first. Returns up to 50 with the full count (total, returned, truncated): if truncated is true you are NOT seeing all of them, so search by tag or words to find the rest. Search by words in the question or answer, or filter by tag. Check this before drafting a new answer to an application question, and try a few different keywords because the search matches words, not meaning.",
       scope: "read",
       input: {
         query: z.string().max(100).optional(),
