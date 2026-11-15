@@ -14,6 +14,8 @@ export const preferencesSchema = z.object({
   maxPerSession: z.number().int().min(1).max(50).default(5),
   /** Claude prepares an application only for jobs it scores at or above this. */
   minScore: z.number().int().min(0).max(100).default(DEFAULT_MIN_SCORE),
+  /** Email a summary after each run. Off unless the user turns it on. */
+  summaryEmail: z.boolean().default(false),
   notes: z.string().trim().max(3000).default(""),
 });
 

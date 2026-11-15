@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { Host_Grotesk, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
 import { Providers } from "@/components/providers";
-import { themeLabBootScript } from "@/components/theme-lab";
 import "./globals.css";
 import "./loaders.css";
-import "./themes.css";
 
 // Dealt pairing: Host Grotesk for display and text, JetBrains Mono for figures and code.
 const host = Host_Grotesk({
@@ -45,10 +43,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${host.variable} ${mono.variable} ${serif.variable} h-full antialiased`}
     >
-      <head>
-        {/* Applies the theme-lab choice before first paint (trial only). */}
-        <script dangerouslySetInnerHTML={{ __html: themeLabBootScript }} />
-      </head>
       <body className="flex min-h-full flex-col">
         <Providers>{children}</Providers>
       </body>

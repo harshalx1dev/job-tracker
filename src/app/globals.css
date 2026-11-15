@@ -6,7 +6,8 @@
 
 /*
  * Design system (taste-skill deal, see .taste-skill/history.json):
- *   palette  lunar-grey-bronze  (neutral ink grounds, one bronze accent)
+ *   palette  neutral ink grounds, one accent per mode, taken from the portfolio:
+ *            Aurora #5ee6cf (dark) and amber #a24f09 (light)
  *   type     Host Grotesk (display 500, tight tracking) + JetBrains Mono
  *   radius   soft (8 / 12 / 20)
  * The interface stays ~95% neutral; colour comes from status dots and the one accent.
@@ -78,9 +79,9 @@
   --card-foreground: #111111;
   --popover: #ffffff;
   --popover-foreground: #111111;
-  --primary: #a08672;
-  --primary-foreground: #111111;
-  --brand: #7a624e; /* bronze for text and marks on light (4.5:1+) */
+  --primary: #a24f09;
+  --primary-foreground: #ffffff;
+  --brand: #a24f09; /* amber on paper: text and marks on light (4.5:1+) */
   --secondary: #e7e7e5;
   --secondary-foreground: #111111;
   --muted: #ebebea;
@@ -91,8 +92,8 @@
   --hairline: rgb(17 17 17 / 0.12);
   --border: rgb(17 17 17 / 0.12);
   --input: rgb(17 17 17 / 0.16);
-  --ring: #a08672;
-  --chart-1: #a9622a; /* validated: L, chroma, contrast on #fff */
+  --ring: #a24f09;
+  --chart-1: #a24f09;
   --chart-2: #5c5c5c;
   --chart-3: #8f8f8f;
   --chart-4: #c9c9c7;
@@ -104,7 +105,7 @@
   --sidebar-accent: #e3e3e1;
   --sidebar-accent-foreground: #111111;
   --sidebar-border: rgb(17 17 17 / 0.1);
-  --sidebar-ring: #a08672;
+  --sidebar-ring: #a24f09;
 }
 
 /* Dark: the palette's own side (the default theme). */
@@ -116,9 +117,9 @@
   --card-foreground: #f2f2f2;
   --popover: #1c1c1c;
   --popover-foreground: #f2f2f2;
-  --primary: #a08672;
-  --primary-foreground: #111111;
-  --brand: #b79c87;
+  --primary: #5ee6cf;
+  --primary-foreground: #04140f;
+  --brand: #5ee6cf;
   --secondary: #242424;
   --secondary-foreground: #f2f2f2;
   --muted: #181818;
@@ -129,8 +130,8 @@
   --hairline: rgb(242 242 242 / 0.1);
   --border: rgb(242 242 242 / 0.1);
   --input: rgb(242 242 242 / 0.14);
-  --ring: #a08672;
-  --chart-1: #c47a3c; /* validated: L, chroma, contrast on #1c1c1c */
+  --ring: #5ee6cf;
+  --chart-1: #5ee6cf;
   --chart-2: #8f8f8f;
   --chart-3: #5c5c5c;
   --chart-4: #2e2e2e;
@@ -142,7 +143,7 @@
   --sidebar-accent: #1c1c1c;
   --sidebar-accent-foreground: #f2f2f2;
   --sidebar-border: rgb(242 242 242 / 0.08);
-  --sidebar-ring: #a08672;
+  --sidebar-ring: #5ee6cf;
 }
 
 @layer base {

@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { FileUp, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -193,7 +193,7 @@ function ReviewDialog({
                 key={s.key}
                 className={cn("flex gap-3 p-3", n === 0 && "opacity-50")}
               >
-                <Checkbox
+                <Switch
                   checked={chosen.has(s.key)}
                   disabled={n === 0}
                   onCheckedChange={() => toggle(s.key)}

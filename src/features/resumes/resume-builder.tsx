@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -274,7 +274,7 @@ export function ResumeBuilder({
                 : "Saved"}
         </span>
         <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-          <Checkbox
+          <Switch
             checked={autosave}
             onCheckedChange={(v) => setAutosave(v === true)}
           />

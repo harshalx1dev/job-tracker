@@ -55,8 +55,8 @@ Notes:
 |---|---|
 | `/trackr-start` | Reads the playbook, loads your profile, preferences, jobs, answers and resumes, asks which resume to use, and tells you any gaps |
 | `/trackr-refresh` | Reloads the latest data from Trackr and tells you what changed. Use it after you edit your profile, answers or preferences in Trackr |
-| `/trackr-search` | Searches for jobs that match your Preferences, scores each one (see **Minimum fit score** in Preferences), adds the good ones to your Wishlist, reads each application form of the jobs at or above your minimum score and saves drafted answers (never submitting), then emails you a summary |
-| `/trackr-apply` | Applies only to jobs that are **Ready to apply**, have **Apply with AI** ticked and have no missing answers; records what it sent and moves them to Applied; emails you a summary |
+| `/trackr-search` | Searches for jobs that match your Preferences, scores each one (see **Minimum fit score** in Preferences), adds the good ones to your Wishlist, reads each application form of the jobs at or above your minimum score and saves drafted answers (never submitting), then, if you turned on **Summary email** in Preferences, emails you a summary |
+| `/trackr-apply` | Applies only to jobs that are **Ready to apply**, have **Apply with AI** ticked and have no missing answers; records what it sent and moves them to Applied; emails you a summary if **Summary email** is on |
 | `/trackr-hr-emails` | Finds posts that give an HR email address, adds the job and saves a drafted email for you to read and send yourself. It never sends |
 | `/trackr-status` | Counts of your jobs per stage and what is waiting on you |
 
@@ -90,7 +90,7 @@ apply until I give you a command.
 | `save_outreach_draft`, `save_answer` | write | Adds a new draft or answer-bank entry for you to review in Trackr |
 | `list_jobs_to_apply` | read | The jobs you ticked **Apply with AI** on. *Eligible* ones are in the **Ready to apply** stage with every answer filled in and not yet applied; the rest come back with the reason. Claude applies only to eligible jobs |
 | `log_application` | write | Records an attempt to apply: **applied**, **prepared** (Claude read the form and drafted answers for you to copy and submit yourself, with copy buttons in the job drawer), failed, or needs your input. Shows under **Applications** in the job drawer |
-| `email_me_summary` | write | Emails **you** (never anyone else) a summary of recorded attempts with Trackr links. Needs SMTP or Resend on the server. Max 5 a day |
+| `email_me_summary` | write | Emails **you** (never anyone else) a summary of recorded attempts with Trackr links, only if you turned on **Summary email** in Preferences (off by default). Needs SMTP or Resend on the server. Max 5 a day |
 
 ### Get the best results
 
@@ -101,7 +101,7 @@ Claude can only be as good as what Trackr knows about you, and it never invents 
 - **Fill the Answer bank** with the questions every form asks: notice period, current and expected pay, location, why you're leaving, a conflict story, your best project. Claude reuses them.
 - **Keep one resume accurate** and tell Claude to use it. It will not change a resume you wrote.
 - **Start small.** Run the search for a few days with the default of 5 jobs, read what it prepared, and only then use `/trackr-apply`.
-- **Check the email.** Summary emails need SMTP or Resend on the server (see [Optional settings](#optional-settings)).
+- **Summary emails are off by default.** Turn on **Summary email** in Preferences if you want one after each run; it needs SMTP or Resend on the server (see [Optional settings](#optional-settings)).
 - **Know the risk.** Many job sites' terms restrict automated applying, and accounts can be limited. You are responsible for how you use it. Go at a human pace.
 
 ### Example prompts
@@ -212,7 +212,6 @@ Add these to `.env.local` (or Vercel) only if you need them:
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | "Sign in with GitHub". Callback: `<BETTER_AUTH_URL>/api/auth/callback/github`. [OAuth apps](https://github.com/settings/developers) |
 | `PRINT_TOKEN_SECRET` | Signs PDF print links (defaults to `BETTER_AUTH_SECRET`) |
 | `CHROME_PATH` | Chrome/Edge for local PDF export, if not in the default location |
-| `NEXT_PUBLIC_THEME_LAB=off` | Hides the theme trial button |
 | `SMTP_HOST`, `SMTP_PORT` | Another SMTP provider (defaults: `smtp.gmail.com`, `465`) |
 | `RESEND_API_KEY` | Send through [Resend](https://resend.com) instead of SMTP; needs a [verified domain](https://resend.com/domains) to email anyone |
 

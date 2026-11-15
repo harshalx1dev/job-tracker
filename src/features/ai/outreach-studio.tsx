@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RelativeTime } from "@/components/relative-time";
 import { cn } from "@/lib/utils";
@@ -113,10 +114,9 @@ export function OutreachStudio({
             </div>
             {channel === "linkedin_note" && (
               <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
+                <Switch
                   checked={premium}
-                  onChange={(e) => setPremium(e.target.checked)}
+                  onCheckedChange={(v) => setPremium(v === true)}
                 />
                 I have LinkedIn Premium (300 characters)
               </label>

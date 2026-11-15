@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -141,6 +142,18 @@ export function PreferencesForm({ initial }: { initial: Preferences }) {
           className="w-24"
         />
         <ScoreGuide />
+      </Field>
+      <Field
+        label="Summary email"
+        hint="When Claude finishes a search or apply run, email a summary to your account address. Needs email to be set up on the server."
+      >
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <Switch
+            checked={p.summaryEmail}
+            onCheckedChange={(v) => set("summaryEmail", v === true)}
+          />
+          Email me a summary after each run
+        </label>
       </Field>
       <Field
         label="Anything else"

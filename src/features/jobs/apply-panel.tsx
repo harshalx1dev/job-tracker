@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { applyReadiness, READY_STAGE } from "@/lib/apply-readiness";
 import { setApplyWithAi } from "@/server/jobs/apply-actions";
 import type { JobApplication } from "@/server/jobs/queries";
@@ -74,7 +74,7 @@ export function ApplyPanel({
   return (
     <div className="space-y-3">
       <label className="flex cursor-pointer items-start gap-2.5 text-sm">
-        <Checkbox
+        <Switch
           checked={on}
           onCheckedChange={(v) => void toggle(v === true)}
           className="mt-0.5"

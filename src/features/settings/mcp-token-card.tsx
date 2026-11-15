@@ -6,7 +6,7 @@ import { strToU8, zipSync } from "fflate";
 import { toast } from "sonner";
 import { RelativeTime } from "@/components/relative-time";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -226,7 +226,7 @@ export function McpTokenCard({
           </Select>
         </div>
         <label className="flex cursor-pointer items-start gap-2 text-sm">
-          <Checkbox
+          <Switch
             checked={write}
             onCheckedChange={(v) => setWrite(v === true)}
             className="mt-0.5"

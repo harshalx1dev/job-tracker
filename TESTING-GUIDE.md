@@ -88,6 +88,7 @@ something else, note the step number.
 ---
 
 ### 3.2 Preferences (sidebar → Preferences)
+- [ ] **Summary email** is off by default. With it off, Claude's `email_me_summary` tool sends nothing and says so.
 - [ ] Fill target roles, locations, work mode, pay, what to skip and jobs per session → **Save preferences** → reload: everything is still there. Claude reads it through `get_profile`.
 
 ---
@@ -226,8 +227,7 @@ something else, note the step number.
 
 ## 11. Look and feel
 
-- [ ] **Theme lab** (round palette button, bottom right): try the 7 accents × 3 backgrounds × light/dark,
-  on the board, a resume and the landing page. Tell Claude which one to make permanent.
+- [ ] **One accent per mode:** Aurora (teal) in dark mode, amber in light mode. There is no accent picker.
 - [ ] **Landing page** (sign out, open http://localhost:3000): the hero board animates; pause button
   bottom-right of it; sections scroll one screen each.
 - [ ] Phone size (browser dev tools, ~390 px wide): sidebar becomes a menu; board scrolls sideways.

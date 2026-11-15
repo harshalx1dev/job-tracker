@@ -42,7 +42,6 @@ jobs:
       BETTER_AUTH_SECRET: ci-placeholder-secret-not-used-in-production
       BETTER_AUTH_URL: http://localhost:3000
       ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
-      NEXT_PUBLIC_THEME_LAB: "off"
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4

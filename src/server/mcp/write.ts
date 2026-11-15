@@ -30,6 +30,7 @@ import {
   buildApplicationSummary,
 } from "@/lib/application-summary";
 import { sendEmail } from "@/server/email";
+import { getPreferences } from "@/server/profile/preferences";
 import type { JobMatch } from "@/lib/ai-schemas";
 import { answerSaveSchema } from "@/lib/answers";
 import { outreachSaveSchema } from "@/lib/outreach";
@@ -400,6 +401,13 @@ export async function emailSummary(
   userId: string,
   input: { applicationIds: string[]; intro?: string },
 ) {
+  // The user decides whether summaries are emailed: off unless they turned it on.
+  if (!(await getPreferences(userId)).summaryEmail)
+    return {
+      sent: false,
+      reason:
+        "The user has summary emails turned off (Preferences → Summary email). Nothing was sent: give them the summary in this chat instead.",
+    };
   const [sent] = await db
     .select({ n: count() })
     .from(mcpCalls)

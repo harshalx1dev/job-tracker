@@ -15,6 +15,7 @@ describe("preferences", () => {
       avoid: "",
       maxPerSession: 5,
       minScore: 70,
+      summaryEmail: false,
       notes: "",
     });
   });
@@ -24,6 +25,14 @@ describe("preferences", () => {
       emptyPreferences(),
     );
     expect(readPreferences(null)).toEqual(emptyPreferences());
+  });
+
+  it("keeps summary emails off unless the user turns them on", () => {
+    expect(preferencesSchema.parse({}).summaryEmail).toBe(false);
+    expect(readPreferences({ roles: "x" }).summaryEmail).toBe(false);
+    expect(preferencesSchema.parse({ summaryEmail: true }).summaryEmail).toBe(
+      true,
+    );
   });
 
   it("keeps the minimum score between 0 and 100", () => {

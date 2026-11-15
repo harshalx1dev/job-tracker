@@ -185,7 +185,7 @@ export function registerWriteTools(server: McpServer, auth: McpAuth) {
       name: "email_me_summary",
       title: "Email the user a summary",
       description:
-        "Emails the signed-in user (always their own address) a summary of the attempts you recorded with log_application: what was applied to, what could not be applied to and why, each with a Trackr link. Pass the application ids from this session. Trackr writes the email from its own records; you may add a short intro. At most 5 a day.",
+        "Emails the signed-in user (always their own address) a summary of the attempts you recorded with log_application: what was applied to, what could not be applied to and why, each with a Trackr link. Pass the application ids from this session. Trackr writes the email from its own records; you may add a short intro. Only sends if the user turned on Summary email in their Preferences (jobSearchPreferences.summaryEmail); otherwise it sends nothing and says so. At most 5 a day.",
       scope: "write",
       input: {
         applicationIds: z.array(id).min(1).max(50),
