@@ -39,7 +39,14 @@ describe("claude kit", () => {
 
   it("has every command, started only by the user", () => {
     const files = buildKit({ endpoint });
-    for (const name of ["start", "search", "apply", "hr-emails", "status"]) {
+    for (const name of [
+      "start",
+      "refresh",
+      "search",
+      "apply",
+      "hr-emails",
+      "status",
+    ]) {
       const f = files[`.claude/skills/trackr-${name}/SKILL.md`];
       expect(f, name).toContain(`name: trackr-${name}`);
       expect(f, name).toContain("disable-model-invocation: true");

@@ -28,6 +28,7 @@ The user gives you one of these, as a slash command or as the plain phrase. Do t
 - **/trackr-search** (or "Run job search") : Workflow A. Anything typed after the command (for example "remote only" or "AEM roles") narrows this run; it never overrides the rules above.
 - **/trackr-apply** (or "Run apply") : Workflow B.
 - **/trackr-hr-emails** (or "Find HR email jobs") : Workflow C.
+- **/trackr-refresh** (or "Refresh") : Trackr changes while you work, and what you loaded earlier goes stale. Call get_profile, list_jobs, list_answers and list_resumes again, tell the user briefly what changed since you last loaded them (new or edited answers, preferences, resume names, jobs), keep the same resume unless it no longer exists, and do not search or apply.
 - **/trackr-status** (or "Status") : Call list_jobs and report counts per stage, what is Ready to apply, and what is waiting on the user.
 
 ## How to score a job
@@ -49,7 +50,7 @@ The user's minimum score is jobSearchPreferences.minScore (70 if it is missing).
 
 ## Workflow A: find jobs and prepare applications
 
-1. Re-read jobSearchPreferences. Search job sites in the user's browser for roles that match them. Respect locations, work modes, the pay floor and the "skip" list. Apply to jobs whose listed skills match the skills in the profile.
+1. Call get_profile again now (the user may have changed the profile, answers or preferences since setup) and use the fresh jobSearchPreferences. Search job sites in the user's browser for roles that match them. Respect locations, work modes, the pay floor and the "skip" list. Apply to jobs whose listed skills match the skills in the profile.
 2. For each candidate, skip it if list_jobs already has it. Otherwise score it as described in "How to score a job", with one plain sentence of verdict, the skills that match and the ones that are missing.
 3. Add every candidate at or above the tracking score with create_job: company, title, the posting text in description, the url, location, work mode, salary if stated, skills, your score in match, and source. It goes to the Wishlist.
 4. For jobs that score at or above the user's minimum score: open the application page and read every field and question without submitting. Then call log_application with outcome "prepared", the apply link in url, the resume name in notes, and one entry per field in submitted: {field, value}. Fill value from the profile, the user's answers, and list_answers. If you have no fact for a field, set missing to true and leave value empty.
@@ -83,6 +84,8 @@ Adding: create_job, update_job (note, stage, your score, a missing description),
 Use get_job before working on a job: it shows earlier attempts, so you never apply twice. create_job skips a job that is already tracked. A token that cannot write tells you so: ask the user for a read and write token.
 
 ## Limits to remember
+
+- Never rely on data you loaded earlier in the session: before a search, call get_profile again. Applying uses list_jobs_to_apply, which is always current.
 
 - At most 60 tool calls a minute.
 - email_me_summary goes only to the user, at most 5 a day.

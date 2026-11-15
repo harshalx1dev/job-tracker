@@ -54,6 +54,7 @@ Notes:
 | Command | What Claude does |
 |---|---|
 | `/trackr-start` | Reads the playbook, loads your profile, preferences, jobs, answers and resumes, asks which resume to use, and tells you any gaps |
+| `/trackr-refresh` | Reloads the latest data from Trackr and tells you what changed. Use it after you edit your profile, answers or preferences in Trackr |
 | `/trackr-search` | Searches for jobs that match your Preferences, scores each one (see **Minimum fit score** in Preferences), adds the good ones to your Wishlist, reads each application form of the jobs at or above your minimum score and saves drafted answers (never submitting), then emails you a summary |
 | `/trackr-apply` | Applies only to jobs that are **Ready to apply**, have **Apply with AI** ticked and have no missing answers; records what it sent and moves them to Applied; emails you a summary |
 | `/trackr-hr-emails` | Finds posts that give an HR email address, adds the job and saves a drafted email for you to read and send yourself. It never sends |

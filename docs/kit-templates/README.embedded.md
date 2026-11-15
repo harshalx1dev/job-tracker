@@ -15,6 +15,7 @@ This folder is ready to use: your Trackr token is already inside `.mcp.json`, so
 | Command | What it does |
 |---|---|
 | `/trackr-start` | Loads the playbook and your data, asks which resume to use, tells you any gaps |
+| `/trackr-refresh` | Reloads the latest data from Trackr and tells you what changed. Use it after you edit your profile, answers or preferences |
 | `/trackr-search` | Finds jobs, scores them, prepares answers for the good ones. Never submits |
 | `/trackr-apply` | Applies only to jobs you approved in Trackr (Ready to apply, Apply with AI ticked, nothing missing) |
 | `/trackr-hr-emails` | Finds posts with an HR email address and drafts emails. Never sends |
