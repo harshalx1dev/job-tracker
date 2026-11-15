@@ -32,7 +32,7 @@ export function registerWriteTools(server: McpServer, auth: McpAuth) {
       name: "create_job",
       title: "Add a job to the board",
       description:
-        "Adds a job lead to the user's Kanban board (first open stage unless you pass one). Include the posting text in description, the URL, and your fit assessment in match. If the same URL or company and title is already tracked, nothing is added and the existing job is returned. Your match is stored as Claude's own assessment, apart from Trackr's AI score.",
+        "Adds a job lead to the user's Kanban board (first open stage unless you pass one). Include the posting text in description, the URL, and your fit assessment in match: score, verdict, matched, missing and a breakdown (one entry each for skills, role, work and conditions, with points and a one-sentence reason; score must equal their sum). If the same URL or company and title is already tracked, nothing is added and the existing job is returned. Your match is stored as Claude's own assessment, apart from Trackr's AI score.",
       scope: "write",
       input: {
         company: z.string().min(1).max(120),

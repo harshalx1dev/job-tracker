@@ -15,12 +15,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getJobExtras } from "@/server/jobs/contact-actions";
 import type { Contact, JobEvent } from "@/server/db/schema";
@@ -100,23 +100,23 @@ export function JobSheet({
     statusColor(statuses.find((s) => s.id === id)?.color ?? "slate");
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full gap-0 overflow-y-auto p-0 sm:max-w-lg">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[92dvh] w-full max-w-none flex-col gap-0 overflow-hidden p-0 max-sm:top-0 max-sm:left-0 max-sm:h-dvh max-sm:max-h-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none sm:max-w-5xl">
         {job && (
           <>
-            <SheetHeader className="border-b p-5">
+            <DialogHeader className="shrink-0 border-b p-5">
               <div className="flex items-start gap-3 pr-8">
                 <CompanyMark
                   company={job.company}
                   className="size-11 rounded-xl text-base"
                 />
                 <div className="min-w-0">
-                  <SheetTitle className="text-xl leading-tight font-medium tracking-[-0.02em]">
+                  <DialogTitle className="text-xl leading-tight font-medium tracking-[-0.02em]">
                     {job.title}
-                  </SheetTitle>
-                  <SheetDescription className="mt-0.5">
+                  </DialogTitle>
+                  <DialogDescription className="mt-0.5">
                     {job.company}
-                  </SheetDescription>
+                  </DialogDescription>
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -140,157 +140,157 @@ export function JobSheet({
                   </a>
                 )}
               </div>
-            </SheetHeader>
+            </DialogHeader>
 
-            <div className="space-y-6 p-5">
-              <dl className="text-sm">
-                <Fact icon={MapPin} label="Location">
-                  {[job.location, job.workMode && WORK_MODE_LABEL[job.workMode]]
-                    .filter(Boolean)
-                    .join(" · ") || "—"}
-                </Fact>
-                <Fact icon={Wallet} label="Salary">
-                  {formatSalary(job) ?? "—"}
-                </Fact>
-                <Fact icon={CalendarClock} label="Applied">
-                  {job.appliedAt
-                    ? format(new Date(job.appliedAt), "d MMM yyyy")
-                    : "—"}
-                </Fact>
-                <Fact icon={CalendarClock} label="Interview">
-                  {job.interviewAt
-                    ? format(new Date(job.interviewAt), "d MMM yyyy, HH:mm")
-                    : "—"}
-                </Fact>
-                <Fact icon={Signal} label="Priority">
-                  <span className="inline-flex items-center gap-2">
-                    <PriorityBars priority={job.priority} />
-                    {PRIORITY_META[job.priority].label}
-                  </span>
-                </Fact>
-              </dl>
-
-              {job.skills.length > 0 && (
-                <Section title="Skills">
-                  <div className="flex flex-wrap gap-1.5">
-                    {job.skills.map((s) => (
-                      <span
-                        key={s}
-                        className="rounded-md bg-muted px-2 py-0.5 text-xs"
-                      >
-                        {s}
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="grid gap-x-8 gap-y-6 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+                <div className="space-y-6">
+                  <dl className="text-sm">
+                    <Fact icon={MapPin} label="Location">
+                      {[
+                        job.location,
+                        job.workMode && WORK_MODE_LABEL[job.workMode],
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "—"}
+                    </Fact>
+                    <Fact icon={Wallet} label="Salary">
+                      {formatSalary(job) ?? "—"}
+                    </Fact>
+                    <Fact icon={CalendarClock} label="Applied">
+                      {job.appliedAt
+                        ? format(new Date(job.appliedAt), "d MMM yyyy")
+                        : "—"}
+                    </Fact>
+                    <Fact icon={CalendarClock} label="Interview">
+                      {job.interviewAt
+                        ? format(new Date(job.interviewAt), "d MMM yyyy, HH:mm")
+                        : "—"}
+                    </Fact>
+                    <Fact icon={Signal} label="Priority">
+                      <span className="inline-flex items-center gap-2">
+                        <PriorityBars priority={job.priority} />
+                        {PRIORITY_META[job.priority].label}
                       </span>
-                    ))}
-                  </div>
-                </Section>
-              )}
-
-              {job.description && (
-                <Section title="Description">
-                  <p className="max-h-64 overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
-                    {job.description}
-                  </p>
-                </Section>
-              )}
-
-              {job.notes && (
-                <Section title="Notes">
-                  <p className="text-sm whitespace-pre-wrap">{job.notes}</p>
-                </Section>
-              )}
-
-              <Section title="Fit with your profile">
-                <div className="space-y-4">
-                  <MatchPanel jobId={job.id} match={job.match ?? null} />
-                  {job.claudeMatch && (
-                    <ClaudeMatchPanel match={job.claudeMatch} />
+                    </Fact>
+                  </dl>
+                  {job.skills.length > 0 && (
+                    <Section title="Skills">
+                      <div className="flex flex-wrap gap-1.5">
+                        {job.skills.map((s) => (
+                          <span
+                            key={s}
+                            className="rounded-md bg-muted px-2 py-0.5 text-xs"
+                          >
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </Section>
                   )}
+                  {job.description && (
+                    <Section title="Description">
+                      <p className="max-h-80 overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
+                        {job.description}
+                      </p>
+                    </Section>
+                  )}
+                  {job.notes && (
+                    <Section title="Notes">
+                      <p className="text-sm whitespace-pre-wrap">{job.notes}</p>
+                    </Section>
+                  )}
+                  <Section title="Contacts">
+                    <ContactsSection
+                      key={job.id}
+                      jobId={job.id}
+                      initial={fresh?.contacts ?? null}
+                    />
+                  </Section>
                 </div>
-              </Section>
-
-              <Section title="Interview prep">
-                <JobPrep
-                  key={job.id}
-                  jobId={job.id}
-                  interviewAt={job.interviewAt}
-                  initial={fresh?.plans ?? null}
-                />
-              </Section>
-
-              {fresh && (
-                <Section title="Apply with AI">
-                  <ApplyPanel
-                    key={job.id}
-                    jobId={job.id}
-                    stageName={statusName(job.statusId)}
-                    applyWithAi={job.applyWithAi}
-                    initial={fresh.applications}
-                  />
-                </Section>
-              )}
-
-              <Section title="Contacts">
-                <ContactsSection
-                  key={job.id}
-                  jobId={job.id}
-                  initial={fresh?.contacts ?? null}
-                />
-              </Section>
-
-              <Section title="Timeline">
-                {events === null ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                  </div>
-                ) : (
-                  <ol className="relative space-y-4 border-l pl-4">
-                    {events.map((e, i) => (
-                      <motion.li
-                        key={e.id}
-                        initial={{ opacity: 0, x: -6 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.04 }}
-                        className="relative text-sm"
-                      >
-                        <span
-                          className={cn(
-                            "absolute top-1.5 -left-[21px] size-2.5 rounded-full ring-4 ring-background",
-                            e.type === "status_changed"
-                              ? statusTone(e.toStatusId).dot
-                              : "bg-muted-foreground/50",
-                          )}
-                        />
-                        <p>
-                          {e.type === "created" && (
-                            <>Added to {statusName(e.toStatusId)}</>
-                          )}
-                          {e.type === "status_changed" && (
-                            <>
-                              Moved from {statusName(e.fromStatusId)} to{" "}
-                              <span className="font-medium">
-                                {statusName(e.toStatusId)}
-                              </span>
-                            </>
-                          )}
-                          {e.type === "updated" && "Details updated"}
-                          {e.type === "archived" && "Archived"}
-                          {e.type === "restored" && "Restored"}
-                          {e.type === "note" && "Note added"}
-                        </p>
-                        <p
-                          className="text-xs text-muted-foreground"
-                          title={format(new Date(e.createdAt), "PPpp")}
-                        >
-                          {ago(e.createdAt)}
-                        </p>
-                      </motion.li>
-                    ))}
-                  </ol>
-                )}
-              </Section>
-
-              <div className="flex gap-2 border-t pt-4">
+                <div className="space-y-6">
+                  <Section title="Fit with your profile">
+                    <div className="space-y-4">
+                      <MatchPanel jobId={job.id} match={job.match ?? null} />
+                      {job.claudeMatch && (
+                        <ClaudeMatchPanel match={job.claudeMatch} />
+                      )}
+                    </div>
+                  </Section>
+                  {fresh && (
+                    <Section title="Apply with AI">
+                      <ApplyPanel
+                        key={job.id}
+                        jobId={job.id}
+                        stageName={statusName(job.statusId)}
+                        applyWithAi={job.applyWithAi}
+                        initial={fresh.applications}
+                      />
+                    </Section>
+                  )}
+                  <Section title="Interview prep">
+                    <JobPrep
+                      key={job.id}
+                      jobId={job.id}
+                      interviewAt={job.interviewAt}
+                      initial={fresh?.plans ?? null}
+                    />
+                  </Section>
+                  <Section title="Timeline">
+                    {events === null ? (
+                      <div className="space-y-3">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                      </div>
+                    ) : (
+                      <ol className="relative space-y-4 border-l pl-4">
+                        {events.map((e, i) => (
+                          <motion.li
+                            key={e.id}
+                            initial={{ opacity: 0, x: -6 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.04 }}
+                            className="relative text-sm"
+                          >
+                            <span
+                              className={cn(
+                                "absolute top-1.5 -left-[21px] size-2.5 rounded-full ring-4 ring-background",
+                                e.type === "status_changed"
+                                  ? statusTone(e.toStatusId).dot
+                                  : "bg-muted-foreground/50",
+                              )}
+                            />
+                            <p>
+                              {e.type === "created" && (
+                                <>Added to {statusName(e.toStatusId)}</>
+                              )}
+                              {e.type === "status_changed" && (
+                                <>
+                                  Moved from {statusName(e.fromStatusId)} to{" "}
+                                  <span className="font-medium">
+                                    {statusName(e.toStatusId)}
+                                  </span>
+                                </>
+                              )}
+                              {e.type === "updated" && "Details updated"}
+                              {e.type === "archived" && "Archived"}
+                              {e.type === "restored" && "Restored"}
+                              {e.type === "note" && "Note added"}
+                            </p>
+                            <p
+                              className="text-xs text-muted-foreground"
+                              title={format(new Date(e.createdAt), "PPpp")}
+                            >
+                              {ago(e.createdAt)}
+                            </p>
+                          </motion.li>
+                        ))}
+                      </ol>
+                    )}
+                  </Section>
+                </div>
+              </div>
+              <div className="flex gap-2 border-t p-5">
                 <Button
                   variant="outline"
                   size="sm"
@@ -309,8 +309,8 @@ export function JobSheet({
             </div>
           </>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 

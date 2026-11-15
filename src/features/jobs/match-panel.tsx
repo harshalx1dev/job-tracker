@@ -9,19 +9,20 @@ import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/relative-time";
 import { cn } from "@/lib/utils";
 import type { JobMatch } from "@/lib/ai-schemas";
+import { SCORE_FACTORS, bandFor } from "@/lib/match-scoring";
 import { aiMatchJob } from "@/server/ai/job-actions";
 
+const BAND_TONE: Record<string, string> = {
+  Strong: "text-emerald-600 dark:text-emerald-400",
+  Good: "text-sky-600 dark:text-sky-400",
+  Partial: "text-amber-600 dark:text-amber-400",
+  Weak: "text-rose-600 dark:text-rose-400",
+  Poor: "text-rose-600 dark:text-rose-400",
+};
+
 function band(score: number) {
-  if (score >= 85)
-    return {
-      label: "Strong fit",
-      tone: "text-emerald-600 dark:text-emerald-400",
-    };
-  if (score >= 65)
-    return { label: "Good fit", tone: "text-sky-600 dark:text-sky-400" };
-  if (score >= 40)
-    return { label: "Partial fit", tone: "text-amber-600 dark:text-amber-400" };
-  return { label: "Weak fit", tone: "text-rose-600 dark:text-rose-400" };
+  const b = bandFor(score);
+  return { ...b, label: `${b.meaning} fit`, tone: BAND_TONE[b.meaning] };
 }
 
 export function MatchPanel({
@@ -150,6 +151,14 @@ function MatchBody({
         {action}
       </div>
 
+      {match.breakdown && (
+        <Breakdown
+          items={match.breakdown}
+          bandText={`${b.why} ${b.action}`}
+          cappedBy={match.cappedBy}
+        />
+      )}
+
       {(match.matched.length > 0 || match.missing.length > 0) && (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <ChipList
@@ -180,6 +189,60 @@ function MatchBody({
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+/** How a score adds up: one row per factor, with the points it earned and why. */
+function Breakdown({
+  items,
+  bandText,
+  cappedBy,
+}: {
+  items: NonNullable<JobMatch["breakdown"]>;
+  bandText: string;
+  cappedBy?: string;
+}) {
+  return (
+    <div className="mt-4 border-t pt-4">
+      <p className="mb-3 text-xs font-medium text-muted-foreground">
+        How this score adds up
+      </p>
+      <ul className="space-y-3.5">
+        {SCORE_FACTORS.map((f) => {
+          const item = items.find((i) => i.factor === f.key);
+          if (!item) return null;
+          return (
+            <li key={f.key}>
+              <div className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="font-medium">{f.name}</span>
+                <span className="font-mono text-xs tabular">
+                  {item.points} / {f.points}
+                </span>
+              </div>
+              <div
+                className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted"
+                role="img"
+                aria-label={`${item.points} of ${f.points} points`}
+              >
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${(item.points / f.points) * 100}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-[13px] leading-snug text-muted-foreground">
+                {item.reason}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+      {cappedBy && (
+        <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-[13px] text-amber-700 dark:text-amber-300">
+          Capped at 40: {cappedBy}
+        </p>
+      )}
+      <p className="mt-3 text-xs text-muted-foreground">{bandText}</p>
     </div>
   );
 }

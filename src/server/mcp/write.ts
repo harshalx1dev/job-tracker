@@ -31,7 +31,8 @@ import {
 } from "@/lib/application-summary";
 import { sendEmail } from "@/server/email";
 import { getPreferences } from "@/server/profile/preferences";
-import type { JobMatch } from "@/lib/ai-schemas";
+import { breakdownItemSchema, type JobMatch } from "@/lib/ai-schemas";
+import { breakdownProblem } from "@/lib/match-scoring";
 import { answerSaveSchema } from "@/lib/answers";
 import { outreachSaveSchema } from "@/lib/outreach";
 import { profileSchema, type Profile } from "@/lib/profile";
@@ -64,13 +65,31 @@ const issues = (err: z.ZodError) =>
     .join("; ");
 
 /** Claude's own assessment of a job. Stored apart from Trackr's AI match. */
-export const claudeMatchSchema = z.object({
-  score: z.number().int().min(0).max(100).describe("Overall fit, 0 to 100"),
-  verdict: z.string().max(200).describe("One plain sentence"),
-  matched: z.array(z.string().max(60)).max(15).default([]),
-  missing: z.array(z.string().max(60)).max(15).default([]),
-  suggestions: z.array(z.string().max(240)).max(5).default([]),
-});
+export const claudeMatchSchema = z
+  .object({
+    score: z.number().int().min(0).max(100).describe("Overall fit, 0 to 100"),
+    verdict: z.string().max(200).describe("One plain sentence"),
+    matched: z.array(z.string().max(60)).max(15).default([]),
+    missing: z.array(z.string().max(60)).max(15).default([]),
+    suggestions: z.array(z.string().max(240)).max(5).default([]),
+    breakdown: z
+      .array(breakdownItemSchema)
+      .max(4)
+      .optional()
+      .describe(
+        "How the score adds up: one entry each for skills (max 50), role (20), work (15) and conditions (15), with points and a one-sentence reason. score must equal the sum",
+      ),
+    cappedBy: z
+      .string()
+      .max(240)
+      .optional()
+      .describe("The dealbreaker that capped the score at 40, if there is one"),
+  })
+  .superRefine((m, ctx) => {
+    const problem = breakdownProblem(m);
+    if (problem)
+      ctx.addIssue({ code: "custom", message: problem, path: ["breakdown"] });
+  });
 export type ClaudeMatchInput = z.input<typeof claudeMatchSchema>;
 
 const toMatch = (m: ClaudeMatchInput): JobMatch => ({

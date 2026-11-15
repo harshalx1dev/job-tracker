@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { FACTOR_KEYS } from "./match-scoring";
 
 /** What the AI extracts from a pasted job description (the user reviews before saving). */
 export const jobImportSchema = z.object({
@@ -37,7 +38,9 @@ export const profileQuestionsSchema = z.object({
         question: z
           .string()
           .max(300)
-          .describe("One specific question, addressed to the candidate as 'you'"),
+          .describe(
+            "One specific question, addressed to the candidate as 'you'",
+          ),
         about: z
           .string()
           .max(120)
@@ -67,4 +70,21 @@ export const jobMatchSchema = z.object({
     .describe("Concrete edits to the resume for this job, each one sentence"),
 });
 
-export type JobMatch = z.infer<typeof jobMatchSchema> & { at: string };
+/** One factor of a score, saved by Claude through the connector: what it earned and why. */
+export const breakdownItemSchema = z.object({
+  factor: z.enum(FACTOR_KEYS),
+  points: z.number().int().min(0).max(50),
+  reason: z
+    .string()
+    .min(1)
+    .max(240)
+    .describe("One plain sentence on why it earned this many points"),
+});
+
+export type JobMatch = z.infer<typeof jobMatchSchema> & {
+  at: string;
+  /** Present when Claude assessed the job: how the score adds up, factor by factor. */
+  breakdown?: z.infer<typeof breakdownItemSchema>[];
+  /** The dealbreaker that capped the score at 40, if any. */
+  cappedBy?: string;
+};
