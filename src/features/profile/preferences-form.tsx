@@ -104,8 +104,8 @@ export function PreferencesForm({ initial }: { initial: Preferences }) {
         />
       </Field>
       <Field
-        label="Jobs per session"
-        hint="The most jobs Claude should handle in one run. A modest number keeps applications careful."
+        label="Applications prepared per run"
+        hint="The most applications Claude prepares in one run, best scores first. It tracks more jobs than this, but only prepares this many."
       >
         <Input
           type="number"

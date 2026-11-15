@@ -24,12 +24,12 @@ A ready-made workspace so Claude runs your job search with real `/` commands. Cl
 |---|---|
 | `/trackr-start` | Loads the playbook and your data, asks which resume to use, tells you any gaps |
 | `/trackr-refresh` | Reloads the latest data from Trackr and tells you what changed. Use it after you edit your profile, answers or preferences |
-| `/trackr-search` | Finds jobs, scores them, prepares answers for the good ones. Never submits |
+| `/trackr-search` | Searches LinkedIn, Naukri, Indeed, company career pages and LinkedIn hiring posts in turn, scores the jobs, adds the good ones, prepares answers for the best. Never submits |
 | `/trackr-apply` | Applies only to jobs you approved in Trackr (Ready to apply, Apply with AI ticked, nothing missing) |
 | `/trackr-hr-emails` | Finds posts with an HR email address and drafts emails. Never sends |
 | `/trackr-status` | Where everything stands |
 
-`/trackr-search` and `/trackr-hr-emails` accept a short focus after the command, for example `/trackr-search remote only`.
+`/trackr-search` accepts a source (`linkedin`, `naukri`, `indeed`, `careers`, `posts`) or a short focus after the command, for example `/trackr-search naukri` or `/trackr-search remote only`. `/trackr-hr-emails` accepts a short focus.
 
 The commands can only be started by you: Claude will not run `/trackr-apply` on its own.
 

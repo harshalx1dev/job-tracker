@@ -43,7 +43,7 @@ export async function readProfile(userId: string) {
   return {
     saved,
     profile,
-    /** What the user wants from a search: roles, places, pay, what to skip, jobs per session. */
+    /** What the user wants from a search: roles, places, pay, what to skip, applications to prepare per run. */
     jobSearchPreferences,
     /** Answers the user gave to "Questions for you", newest first. */
     background,

@@ -55,7 +55,7 @@ Notes:
 |---|---|
 | `/trackr-start` | Reads the playbook, loads your profile, preferences, jobs, answers and resumes, asks which resume to use, and tells you any gaps |
 | `/trackr-refresh` | Reloads the latest data from Trackr and tells you what changed. Use it after you edit your profile, answers or preferences in Trackr |
-| `/trackr-search` | Searches for jobs that match your Preferences, scores each one (see **Minimum fit score** in Preferences), adds the good ones to your Wishlist, reads each application form of the jobs at or above your minimum score and saves drafted answers (never submitting), then, if you turned on **Summary email** in Preferences, emails you a summary |
+| `/trackr-search` | Searches LinkedIn, Naukri, Indeed, company career pages and LinkedIn hiring posts in turn (or just one: `/trackr-search naukri`), scores each job (see **Minimum fit score** in Preferences), adds the good ones to your Wishlist, reads the application forms of the best ones at or above your minimum score and saves drafted answers (never submitting), and reports per source, then, if you turned on **Summary email** in Preferences, emails you a summary |
 | `/trackr-apply` | Applies only to jobs that are **Ready to apply**, have **Apply with AI** ticked and have no missing answers; records what it sent and moves them to Applied; emails you a summary if **Summary email** is on |
 | `/trackr-hr-emails` | Finds posts that give an HR email address, adds the job and saves a drafted email for you to read and send yourself. It never sends |
 | `/trackr-status` | Counts of your jobs per stage and what is waiting on you |
@@ -80,7 +80,7 @@ apply until I give you a command.
 
 | Tool | Needs | What it does |
 |---|---|---|
-| `get_profile` | read | Your profile, your answers to "Questions for you", and your **Preferences** (target roles, locations, work mode, pay, what to skip, jobs per session), as the source of truth about you |
+| `get_profile` | read | Your profile, your answers to "Questions for you", and your **Preferences** (target roles, locations, work mode, pay, what to skip, applications to prepare per run), as the source of truth about you |
 | `list_statuses`, `list_jobs`, `get_job` | read | Your board stages, jobs, and one job in full (posting, notes, both scores, linked resumes, drafts, answers) |
 | `get_playbook` | read | The playbook Claude follows: rules, setup steps and the commands |
 | `list_resumes`, `get_resume`, `list_answers` | read | Your resumes and a resume's content; search your answer bank |
@@ -97,7 +97,7 @@ apply until I give you a command.
 Claude can only be as good as what Trackr knows about you, and it never invents facts, so gaps become "Needs your answer" instead of finished applications.
 
 - **Complete your profile**, and answer the AI's **Questions for you** on the Profile page. Specific numbers and stories make better answers.
-- **Fill Preferences** (sidebar): target roles, locations, work modes, pay, what to skip, the jobs-per-session limit and the **minimum fit score** (the Preferences page explains how Claude scores a job). The **Anything else** box is read by Claude as guidance: say what makes a job a fit or a no, and which skills you do or don't want claimed.
+- **Fill Preferences** (sidebar): target roles, locations, work modes, pay, what to skip, the number of applications to prepare per run and the **minimum fit score** (the Preferences page explains how Claude scores a job). The **Anything else** box is read by Claude as guidance: say what makes a job a fit or a no, and which skills you do or don't want claimed.
 - **Fill the Answer bank** with the questions every form asks: notice period, current and expected pay, location, why you're leaving, a conflict story, your best project. Claude reuses them.
 - **Keep one resume accurate** and tell Claude to use it. It will not change a resume you wrote.
 - **Start small.** Run the search for a few days with the default of 5 jobs, read what it prepared, and only then use `/trackr-apply`.

@@ -41,7 +41,7 @@ export function createTrackrServer(auth: McpAuth) {
       name: "get_profile",
       title: "Get my profile",
       description:
-        "The user's profile (from their resume), the answers they gave to Trackr's 'Questions for you', and their job search preferences (jobSearchPreferences: target roles, locations, work modes, pay, what to skip, and the most jobs to handle per session). This is the only source of truth about their experience: never invent roles, dates, metrics or skills that are not here. When searching for jobs, follow jobSearchPreferences and stop at maxPerSession.",
+        "The user's profile (from their resume), the answers they gave to Trackr's 'Questions for you', and their job search preferences (jobSearchPreferences: target roles, locations, work modes, pay, what to skip, and how many applications to prepare per run). This is the only source of truth about their experience: never invent roles, dates, metrics or skills that are not here. When searching for jobs, follow jobSearchPreferences and the playbook's limits, and prepare at most maxPerSession applications per run.",
       scope: "read",
       input: {},
     },
