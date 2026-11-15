@@ -2,6 +2,7 @@ import "server-only";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { PLAYBOOK } from "@/lib/claude-playbook";
+import { kitUpdate } from "@/lib/claude-kit";
 import type { McpAuth } from "./tokens";
 import * as read from "./read";
 import { ToolError, tool } from "./tool";
@@ -32,6 +33,23 @@ export function createTrackrServer(auth: McpAuth) {
       input: {},
     },
     async () => ({ playbook: PLAYBOOK }),
+  );
+
+  tool(
+    server,
+    auth,
+    {
+      name: "get_kit_update",
+      title: "Check for a newer starter kit",
+      description:
+        "Tells you whether the user's Claude Code starter kit folder is out of date. Pass installedVersion (the contents of the .kit-version file in the user's folder, if it exists). With includeFiles true and an out-of-date kit, it returns the latest files for the /trackr-update-kit command to write into the folder after the user confirms. Never write .mcp.json or .claude/settings.local.json from it.",
+      scope: "read",
+      input: {
+        installedVersion: z.string().max(40).optional(),
+        includeFiles: z.boolean().optional(),
+      },
+    },
+    async (args) => kitUpdate(args),
   );
 
   tool(

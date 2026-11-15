@@ -53,7 +53,7 @@ export const SCORE_FACTORS = [
     points: 20,
     name: "Role and level",
     detail:
-      "Whether it matches one of your target roles, and whether the experience asked for fits yours.",
+      "Whether it matches one of your target roles (roles listed first count more), and whether the experience asked for fits yours.",
   },
   {
     points: 15,

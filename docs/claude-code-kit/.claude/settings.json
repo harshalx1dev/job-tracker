@@ -9,7 +9,8 @@
       "mcp__trackr__list_resumes",
       "mcp__trackr__get_resume",
       "mcp__trackr__list_answers",
-      "mcp__trackr__list_jobs_to_apply"
+      "mcp__trackr__list_jobs_to_apply",
+      "mcp__trackr__get_kit_update"
     ]
   }
 }

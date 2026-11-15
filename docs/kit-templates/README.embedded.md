@@ -20,6 +20,7 @@ This folder is ready to use: your Trackr token is already inside `.mcp.json`, so
 | `/trackr-apply` | Applies only to jobs you approved in Trackr (Ready to apply, Apply with AI ticked, nothing missing) |
 | `/trackr-hr-emails` | Finds posts with an HR email address and drafts emails. Never sends |
 | `/trackr-status` | Where everything stands |
+| `/trackr-update-kit` | Updates this folder's commands and instructions to the latest version. Your token file is never touched |
 
 `/trackr-search` accepts a source (`linkedin`, `naukri`, `indeed`, `careers`, `posts`) or a short focus after the command, for example `/trackr-search naukri` or `/trackr-search remote only`. `/trackr-hr-emails` accepts a short focus. The commands can only be started by you: Claude will not run `/trackr-apply` on its own.
 

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { unzipSync, zipSync, strToU8, strFromU8 } from "fflate";
 import { describe, expect, it } from "vitest";
 import { generateKitSource } from "../../scripts/kit-source";
-import { buildKit } from "./claude-kit";
+import { buildKit, kitUpdate, KIT_VERSION } from "./claude-kit";
 
 const norm = (s: string) => s.replace(/\r\n/g, "\n");
 const endpoint = "https://trackr.example.com/api/mcp";
@@ -46,6 +46,7 @@ describe("claude kit", () => {
       "apply",
       "hr-emails",
       "status",
+      "update-kit",
     ]) {
       const f = files[`.claude/skills/trackr-${name}/SKILL.md`];
       expect(f, name).toContain(`name: trackr-${name}`);
@@ -70,5 +71,41 @@ describe("claude kit", () => {
     expect(Object.keys(back)).toContain(
       "trackr-job-search/.claude/settings.json",
     );
+  });
+
+  it("stamps the version into the kit, and docs carry the same one", () => {
+    expect(buildKit({ endpoint })[".kit-version"]).toBe(`${KIT_VERSION}
+`);
+    expect(
+      readFileSync("docs/claude-code-kit/.kit-version", "utf8").trim(),
+    ).toBe(KIT_VERSION);
+  });
+});
+
+describe("kitUpdate", () => {
+  it("says nothing more to do when the installed kit is current", () => {
+    expect(
+      kitUpdate({ installedVersion: KIT_VERSION, includeFiles: true }),
+    ).toEqual({
+      latestVersion: KIT_VERSION,
+      installedVersion: KIT_VERSION,
+      upToDate: true,
+    });
+  });
+
+  it("points an old or unknown kit at the update command without sending files", () => {
+    const r = kitUpdate({ installedVersion: "old" });
+    expect(r.upToDate).toBe(false);
+    expect("files" in r).toBe(false);
+    expect(kitUpdate({}).installedVersion).toBeNull();
+  });
+
+  it("sends the latest files, but never the token file or the readme", () => {
+    const r = kitUpdate({ installedVersion: "old", includeFiles: true });
+    const paths = (r as { files: { path: string }[] }).files.map((f) => f.path);
+    expect(paths).toContain(".claude/skills/trackr-update-kit/SKILL.md");
+    expect(paths).toContain(".kit-version");
+    expect(paths).not.toContain(".mcp.json");
+    expect(paths).not.toContain("README.md");
   });
 });

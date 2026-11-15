@@ -39,7 +39,7 @@ export function PreferencesForm({ initial }: { initial: Preferences }) {
     <form onSubmit={save} className="space-y-6">
       <Field
         label="Target roles"
-        hint="One per line, for example Frontend Developer (React), AEM Developer."
+        hint="One per line, most wanted first. Claude searches the first roles most and prefers them when scores are close. For example: AEM Developer, then Frontend Developer (React)."
       >
         <Textarea
           value={p.roles}

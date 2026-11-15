@@ -10,6 +10,7 @@ describe("claude playbook", () => {
   it("names every tool the connector offers", () => {
     for (const tool of [
       "get_playbook",
+      "get_kit_update",
       "get_profile",
       "list_statuses",
       "list_jobs",

@@ -59,6 +59,7 @@ Notes:
 | `/trackr-apply` | Applies only to jobs that are **Ready to apply**, have **Apply with AI** ticked and have no missing answers; records what it sent and moves them to Applied; emails you a summary if **Summary email** is on |
 | `/trackr-hr-emails` | Finds posts that give an HR email address, adds the job and saves a drafted email for you to read and send yourself. It never sends |
 | `/trackr-status` | Counts of your jobs per stage and what is waiting on you |
+| `/trackr-update-kit` | Updates your kit folder's commands and instructions to the latest version (your token file is never touched). Run it when Claude tells you a kit update is available |
 
 **In a normal Claude chat or Project**, send this **starting prompt** once, then type the plain phrases `Run job search`, `Run apply`, `Find HR email jobs` and `Status`:
 
@@ -83,6 +84,7 @@ apply until I give you a command.
 | `get_profile` | read | Your profile, your answers to "Questions for you", and your **Preferences** (target roles, locations, work mode, pay, what to skip, applications to prepare per run), as the source of truth about you |
 | `list_statuses`, `list_jobs`, `get_job` | read | Your board stages, jobs, and one job in full (posting, notes, both scores, linked resumes, drafts, answers) |
 | `get_playbook` | read | The playbook Claude follows: rules, setup steps and the commands |
+| `get_kit_update` | read | Whether your Claude Code kit folder is out of date, and the latest files for `/trackr-update-kit` |
 | `list_resumes`, `get_resume`, `list_answers` | read | Your resumes and a resume's content; search your answer bank |
 | `create_job` | write | Adds a lead to your board (posting text, URL, stage, notes, Claude's fit assessment). Skips jobs already tracked (same URL, or same company and title) |
 | `update_job` | write | Appends a dated note, moves the stage, adds Claude's score, or fills in a missing description |

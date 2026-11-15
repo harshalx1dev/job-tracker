@@ -1,12 +1,13 @@
 // Builds the source of src/lib/claude-kit.generated.ts from docs/claude-code-kit,
 // so the folder people read and the kit the app offers for download can't drift.
 // Run after editing the kit: npx tsx scripts/write-kit.ts
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const KIT_DIR = "docs/claude-code-kit";
 /** Built by the app per download, or a variant of its own: not copied as they are. */
-const SPECIAL = new Set([".mcp.json", "README.md"]);
+const SPECIAL = new Set([".mcp.json", "README.md", ".kit-version"]);
 
 const read = (p: string) => readFileSync(p, "utf8").replace(/\r\n/g, "\n");
 
@@ -15,6 +16,19 @@ function walk(dir: string): string[] {
     const p = join(dir, name);
     return statSync(p).isDirectory() ? walk(p) : [p];
   });
+}
+
+/** A short id for the kit's content: changes whenever any file the update delivers changes. */
+export function kitVersion(): string {
+  const files = walk(KIT_DIR)
+    .map((p) => relative(KIT_DIR, p).split("\\").join("/"))
+    .filter((f) => !SPECIAL.has(f))
+    .sort();
+  const h = createHash("sha256");
+  for (const f of files) h.update(`${f}
+${read(join(KIT_DIR, f))}
+`);
+  return h.digest("hex").slice(0, 12);
 }
 
 export function generateKitSource(): string {
@@ -29,6 +43,8 @@ export function generateKitSource(): string {
 export const KIT_FILES: Record<string, string> = {
 ${entries.join("\n")}
 };
+
+export const KIT_VERSION = ${JSON.stringify(kitVersion())};
 
 export const KIT_README_MANUAL = ${JSON.stringify(read(join(KIT_DIR, "README.md")))};
 
