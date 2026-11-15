@@ -14,6 +14,7 @@ describe("preferences", () => {
       salary: "",
       avoid: "",
       maxPerSession: 5,
+      minScore: 70,
       notes: "",
     });
   });
@@ -23,6 +24,12 @@ describe("preferences", () => {
       emptyPreferences(),
     );
     expect(readPreferences(null)).toEqual(emptyPreferences());
+  });
+
+  it("keeps the minimum score between 0 and 100", () => {
+    expect(preferencesSchema.safeParse({ minScore: 101 }).success).toBe(false);
+    expect(preferencesSchema.safeParse({ minScore: -1 }).success).toBe(false);
+    expect(preferencesSchema.parse({ minScore: 80 }).minScore).toBe(80);
   });
 
   it("limits how many jobs one session may handle", () => {

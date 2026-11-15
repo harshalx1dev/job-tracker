@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__trackr__get_playbook",
+      "mcp__trackr__get_profile",
+      "mcp__trackr__list_statuses",
+      "mcp__trackr__list_jobs",
+      "mcp__trackr__get_job",
+      "mcp__trackr__list_resumes",
+      "mcp__trackr__get_resume",
+      "mcp__trackr__list_answers",
+      "mcp__trackr__list_jobs_to_apply"
+    ]
+  }
+}

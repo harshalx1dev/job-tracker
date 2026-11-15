@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_MIN_SCORE } from "./match-scoring";
 
 /** What the user wants from a job search. Claude reads this through the connector. */
 
@@ -11,6 +12,8 @@ export const preferencesSchema = z.object({
   salary: z.string().trim().max(500).default(""),
   avoid: z.string().trim().max(1000).default(""),
   maxPerSession: z.number().int().min(1).max(50).default(5),
+  /** Claude prepares an application only for jobs it scores at or above this. */
+  minScore: z.number().int().min(0).max(100).default(DEFAULT_MIN_SCORE),
   notes: z.string().trim().max(3000).default(""),
 });
 

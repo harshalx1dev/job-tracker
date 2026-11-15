@@ -27,7 +27,7 @@ export function createTrackrServer(auth: McpAuth) {
       name: "get_playbook",
       title: "Read the Trackr playbook",
       description:
-        "How to work with Trackr: the rules, the setup steps, the commands the user will give you (Run job search, Run apply, Find HR email jobs, Status) and what each does. Read it fully at the start of every session.",
+        "How to work with Trackr: the rules, the setup steps, how to score a job, and the commands the user will give you (/trackr-search, /trackr-apply, /trackr-hr-emails, /trackr-status, or the plain phrases) and what each does. Read it fully at the start of every session.",
       scope: "read",
       input: {},
     },

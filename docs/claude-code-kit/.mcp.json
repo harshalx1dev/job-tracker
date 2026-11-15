@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "trackr": {
+      "type": "http",
+      "url": "${TRACKR_URL}/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${TRACKR_TOKEN}"
+      }
+    }
+  }
+}
