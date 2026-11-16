@@ -9,14 +9,14 @@ export const JOB_SOURCES = [
     label: "LinkedIn jobs",
     on: true,
     hint: "The widest selection and the most recruiters.",
-    how: "Search the Jobs tab with your search variants.",
+    how: "Try search_jobs first (see below); if it is not set up, search the Jobs tab with your search variants.",
   },
   {
     id: "naukri",
     label: "Naukri",
     on: true,
     hint: "Best for volume, IT services and large Indian employers.",
-    how: "Search by keyword and place. Skip listings older than about two months.",
+    how: "Try search_jobs first (see below); if it is not set up, search by keyword and place and skip listings older than about two months.",
   },
   {
     id: "instahyre",

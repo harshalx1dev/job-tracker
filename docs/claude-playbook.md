@@ -55,8 +55,8 @@ Always explain the score in the match you save. Give the breakdown: exactly one 
 ## Workflow A: find jobs and prepare applications
 
 **Sources.** Search the sources turned on in jobSearchPreferences.sources (a list of ids; if it is missing, use linkedin, naukri, instahyre and posts), in the order below, unless the user named one in the command. Visit them one after another in the user's browser, not at the same time. If a source needs a sign-in the user has not done, note it for the report and go on (see rule 3). The sources:
-1. LinkedIn jobs (linkedin): Search the Jobs tab with your search variants.
-2. Naukri (naukri): Search by keyword and place. Skip listings older than about two months.
+1. LinkedIn jobs (linkedin): Try search_jobs first (see below); if it is not set up, search the Jobs tab with your search variants.
+2. Naukri (naukri): Try search_jobs first (see below); if it is not set up, search by keyword and place and skip listings older than about two months.
 3. Instahyre (instahyre): Open the opportunities and recommended jobs the site matched to the profile, then search by role. Needs the user signed in.
 4. LinkedIn hiring posts (posts): Follow Workflow C.
 5. Cutshort (cutshort): Use the matched and recommended jobs, then search by role. Needs the user signed in. Do not use its AI interview or recording steps.
@@ -65,6 +65,8 @@ Always explain the score in the match you save. Give the breakdown: exactly one 
 8. Foundit (foundit): Search by role and location.
 9. Indeed (indeed): Search by role and location.
 10. Company career pages (careers): Find the companies with web search if you have it (for example agencies and consultancies that hire for the target roles), then open their career pages in Chrome.
+
+**Searching with search_jobs (linkedin and naukri).** It gives a short list that is already cut down, and costs the user about a cent of their own Apify credit for 30 listings, so use it instead of browsing those two sources. Build the filters from get_profile: keywords from the target roles (one search per top role, most wanted first), one city, mustHave terms that really mark the role (for an AEM role: AEM and Adobe Experience Manager, not "developer"), experienceYears from the profile, and titleExclude for seniority and kinds of work the profile rules out (for example lead, architect, principal). Ask for 20 listings, at most 30. If it answers status running, call get_search_results with the same filters and the runId. The text of each listing is cut to 2,000 characters; open the url in Chrome only when a close call needs more. If search_jobs says it is not set up, or the daily limit is reached, browse that source instead. Never ask for the Apify token in chat: the user adds it in Trackr Settings. Every listing returned counts toward that source's 15-listing budget. Look at dropped when few listings come back, to see which rule removed them.
 
 1. Call get_profile again now (the user may have changed the profile, answers or preferences since setup) and use the fresh jobSearchPreferences. Target roles are in priority order, most wanted first: spend most of your searches on the first roles. Build 2 or 3 search variants per source from the target roles, the places and work modes, and the pay floor (for example a role plus "Mumbai", the same role plus "remote", and an AEM or Edge Delivery Services variant). Respect the "skip" list. Apply to jobs whose listed skills match the skills in the profile.
 2. Work through each source in turn. On each: run your search variants and look at up to 15 listings. Skip any that list_jobs already has. Score each one as described in "How to score a job", with one plain sentence of verdict, the skills that match and the ones that are missing.
@@ -94,6 +96,7 @@ Many openings only appear as posts. Search LinkedIn posts for hiring posts (for 
 
 ## Tools
 
+Searching (costs a little, write scope): search_jobs, get_search_results.
 Reading: get_playbook (this text), get_kit_update, get_profile, list_statuses, list_jobs, get_job, list_resumes, get_resume, list_answers, list_jobs_to_apply.
 Adding: create_job, update_job (note, stage, your score, a missing description), save_resume_version, save_outreach_draft, save_answer, log_application, email_me_summary.
 

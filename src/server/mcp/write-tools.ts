@@ -16,6 +16,12 @@ import {
   saveOutreachDraft,
   saveResumeVersion,
 } from "./write";
+import {
+  resultShape,
+  searchResults,
+  searchShape,
+  startSearch,
+} from "@/server/search/run";
 
 const id = z.string().min(1).max(100);
 const bullets = z.array(z.string().min(1).max(400)).max(40);
@@ -25,6 +31,34 @@ const bullets = z.array(z.string().min(1).max(400)).max(40);
  * or deletes anything the user already has.
  */
 export function registerWriteTools(server: McpServer, auth: McpAuth) {
+  tool(
+    server,
+    auth,
+    {
+      name: "search_jobs",
+      title: "Search Naukri or LinkedIn through Apify",
+      description:
+        "Searches one source (naukri or linkedin) with tight filters and returns a short, already-filtered list of fresh listings with their text. It spends a little of the user's own Apify credit (about a cent for 30 listings), so ask for 15 to 30, never more, and use it instead of browsing that source. Build the filters from get_profile: keywords from the first target roles, one city, mustHave terms that really mark the role, her years of experience, and title words her skip list rules out. Results already exclude stale listings, other places, repeats, companies' near-copies and jobs already tracked, and dropped says how many each rule removed. If it answers status running, collect the results with get_search_results. Needs the user's Apify token in Trackr Settings; never ask for that token in chat.",
+      scope: "write",
+      input: searchShape,
+    },
+    (args, userId) => startSearch(userId, args),
+  );
+
+  tool(
+    server,
+    auth,
+    {
+      name: "get_search_results",
+      title: "Collect the results of a running search",
+      description:
+        "Collects the results of a search_jobs run that was still going. Send the same filters again with the runId. It does not start a new run or cost anything more.",
+      scope: "write",
+      input: resultShape,
+    },
+    (args, userId) => searchResults(userId, args),
+  );
+
   tool(
     server,
     auth,

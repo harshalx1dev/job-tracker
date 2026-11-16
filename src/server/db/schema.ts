@@ -219,6 +219,22 @@ export const aiCredentials = pgTable("ai_credentials", {
   updatedAt: updatedAt(),
 });
 
+/** A user's Apify token (for job search), encrypted like the Gemini key. Never returned to the browser or Claude. */
+export const apifyCredentials = pgTable("apify_credentials", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  ciphertext: text("ciphertext").notNull(),
+  iv: text("iv").notNull(),
+  authTag: text("auth_tag").notNull(),
+  last4: text("last4").notNull(),
+  /** The Apify account the token belongs to, as Apify reports it. */
+  username: text("username").notNull(),
+  validatedAt: timestamp("validated_at", { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
 /**
  * Per-user AI choices: the model for writing and judgement tasks (draft_model)
  * and the lighter one for extraction tasks (basic_model), and what test calls

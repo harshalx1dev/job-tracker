@@ -15,6 +15,9 @@ const json = (status: number, body: unknown, headers?: HeadersInit) =>
     headers: { "content-type": "application/json", ...headers },
   });
 
+/** A search can wait up to ~45s for Apify. */
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const result = await authenticateBearer(request.headers.get("authorization"));
   if (!result.ok) {

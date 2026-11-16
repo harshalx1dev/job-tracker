@@ -26,6 +26,8 @@ describe("claude playbook", () => {
       "save_answer",
       "log_application",
       "email_me_summary",
+      "search_jobs",
+      "get_search_results",
     ])
       expect(PLAYBOOK, tool).toContain(tool);
   });

@@ -4,10 +4,12 @@ import { ShieldCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusManager } from "@/features/settings/status-manager";
 import { AiKeyCard } from "@/features/settings/ai-key-card";
+import { ApifyKeyCard } from "@/features/settings/apify-key-card";
 import { DeleteAccount } from "@/features/settings/delete-account";
 import { DraftModelCard } from "@/features/settings/draft-model-card";
 import { McpTokenCard } from "@/features/settings/mcp-token-card";
 import { getMcpTokensSafe } from "@/server/mcp/tokens";
+import { getApifyStatus } from "@/server/search/credentials";
 import { getModelPicker } from "@/server/ai/models";
 import { getAiStatus } from "@/server/ai/status";
 import { listStatuses } from "@/server/jobs/statuses";
@@ -30,10 +32,12 @@ export default function SettingsPage() {
 
 async function SettingsLoader() {
   const user = await requireUser();
-  const [statuses, ai, mcpTokens] = await Promise.all([
+  const [statuses, ai, mcpTokens, apify] = await Promise.all([
     listStatuses(user.id),
     getAiStatus(user),
     getMcpTokensSafe(user.id),
+    // null until the migration that adds the table has run: the card is hidden.
+    getApifyStatus(user.id).catch(() => null),
   ]);
   const mcpEndpoint = `${(process.env.BETTER_AUTH_URL ?? "").replace(/\/$/, "")}/api/mcp`;
   return (
@@ -85,6 +89,15 @@ async function SettingsLoader() {
           description="Let Claude read your profile and jobs, and add leads and drafts, using a token you control."
         >
           <McpTokenCard tokens={mcpTokens} endpoint={mcpEndpoint} />
+        </Section>
+      )}
+
+      {apify && (
+        <Section
+          title="Job search (Apify)"
+          description="Lets Claude search Naukri and LinkedIn with tight filters, using your own Apify account."
+        >
+          <ApifyKeyCard status={apify} />
         </Section>
       )}
 

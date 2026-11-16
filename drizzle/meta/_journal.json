@@ -78,6 +78,13 @@
       "when": 1794689302638,
       "tag": "0010_apply_with_ai",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794858626581,
+      "tag": "0011_abandoned_scorpion",
+      "breakpoints": true
     }
   ]
 }
