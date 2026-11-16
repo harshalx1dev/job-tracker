@@ -6,6 +6,9 @@ import {
   hasTerm,
   normalizeLinkedin,
   normalizeNaukri,
+  queryKey,
+  tooSoon,
+  windowDays,
   toIso,
   type Listing,
   type SearchRequest,
@@ -205,6 +208,65 @@ describe("filterListings, one rule per failure seen in the trial", () => {
     const { kept, dropped } = filterListings(jobs, req(), [], now);
     expect(kept).toHaveLength(2);
     expect(dropped.overCompanyLimit).toBe(1);
+  });
+});
+
+describe("remembering between searches", () => {
+  const last = new Date("2026-11-17T04:00:00Z");
+
+  it("looks back only to the last run, but never past the user's limit", () => {
+    expect(windowDays(15, null, now)).toBe(15);
+    expect(windowDays(15, last, now)).toBe(1);
+    expect(windowDays(15, new Date("2026-11-12T10:00:00Z"), now)).toBe(5);
+    expect(windowDays(15, new Date("2026-09-01T00:00:00Z"), now)).toBe(15);
+  });
+
+  it("refuses an identical repeat within three hours", () => {
+    expect(tooSoon(new Date("2026-11-17T08:30:00Z"), now)).toBe(true);
+    expect(tooSoon(last, now)).toBe(false);
+    expect(tooSoon(null, now)).toBe(false);
+  });
+
+  it("treats the same filters as one search, whatever the word order or case", () => {
+    const a = queryKey(req());
+    expect(
+      queryKey(req({ mustHave: ["adobe experience manager", "AEM"] })),
+    ).toBe(a);
+    expect(queryKey(req({ keywords: "react developer" }))).not.toBe(a);
+    expect(queryKey(req({ source: "naukri" }))).not.toBe(a);
+  });
+
+  it("asks each source to skip what it has shown", () => {
+    const mem = { skipIds: ["111", "222"], stateKey: "k" };
+    expect(actorInput(req(), mem)).toMatchObject({ skipJobId: ["111", "222"] });
+    expect(actorInput(req({ source: "naukri" }), mem)).toMatchObject({
+      incremental: true,
+      stateKey: "k",
+    });
+    expect(actorInput(req())).not.toHaveProperty("skipJobId");
+  });
+
+  it("narrows to a day for a repeat", () => {
+    expect(actorInput(req({ maxAgeDays: 1 }))).toMatchObject({
+      datePosted: "r86400",
+    });
+    expect(actorInput(req({ source: "naukri", maxAgeDays: 1 }))).toMatchObject({
+      freshness: 1,
+    });
+  });
+
+  it("drops listings it has already shown", () => {
+    const a = listing({ externalId: "A" });
+    const b = listing({ externalId: "B", company: "Other" });
+    const { kept, dropped } = filterListings(
+      [a, b],
+      req(),
+      [],
+      now,
+      new Set(["A"]),
+    );
+    expect(kept.map((l) => l.externalId)).toEqual(["B"]);
+    expect(dropped.alreadySeen).toBe(1);
   });
 });
 

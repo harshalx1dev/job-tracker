@@ -85,6 +85,13 @@
       "when": 1794858626581,
       "tag": "0011_abandoned_scorpion",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794859839106,
+      "tag": "0012_careful_kitty_pryde",
+      "breakpoints": true
     }
   ]
 }

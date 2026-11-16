@@ -14,11 +14,15 @@ import {
   actorInput,
   filterListings,
   normalizeAll,
+  queryKey,
+  tooSoon,
+  windowDays,
   type SearchRequest,
 } from "@/lib/job-search";
 import { ToolError } from "@/server/mcp/tool";
 import { ApifyError, getItems, getRun, startRun } from "./apify";
 import { SEARCHES_PER_DAY, getApifyToken, searchesToday } from "./credentials";
+import { lastRun, remember, seenIds } from "./memory";
 
 /** Never more than this on one search, whatever the Actor's price. A 30-job search costs about a cent. */
 const MAX_CHARGE_USD = 0.05;
@@ -111,7 +115,11 @@ const guard = async <T>(run: () => Promise<T>) => {
   }
 };
 
-/** Starts a search. Returns the results if the run finishes in time, else a runId to collect them with. */
+/**
+ * Starts a search. Looks back only to the last time this same search ran, skips
+ * listings it has already shown, and refuses an identical repeat within a few
+ * hours: nothing new can be expected, and every run costs credit.
+ */
 export async function startSearch(userId: string, args: SearchArgs) {
   const token = await tokenFor(userId);
   const used = await searchesToday(userId);
@@ -119,16 +127,26 @@ export async function startSearch(userId: string, args: SearchArgs) {
     throw new ToolError(
       `That is the daily limit of ${SEARCHES_PER_DAY} searches. Use the browser for the rest, or try again tomorrow.`,
     );
-  const req = toRequest(args);
+  const { req, key, last } = await plan(userId, args);
+  if (tooSoon(last))
+    throw new ToolError(
+      `This exact search finished ${Math.max(1, Math.round((Date.now() - last!.getTime()) / 60_000))} minutes ago, so nothing new is expected yet. Change the keywords or place, or wait a few hours.`,
+    );
+  const skipIds = await seenIds(userId, req.source);
   const run = await guard(() =>
-    startRun(token, ACTORS[req.source], actorInput(req), {
-      maxItems: req.limit,
-      maxChargeUsd: MAX_CHARGE_USD,
-      timeoutSecs: RUN_TIMEOUT_SECS,
-      waitSecs: WAIT_SECS,
-    }),
+    startRun(
+      token,
+      ACTORS[req.source],
+      actorInput(req, { skipIds, stateKey: key }),
+      {
+        maxItems: req.limit,
+        maxChargeUsd: MAX_CHARGE_USD,
+        timeoutSecs: RUN_TIMEOUT_SECS,
+        waitSecs: WAIT_SECS,
+      },
+    ),
   );
-  return collect(userId, token, req, run);
+  return collect(userId, token, req, key, last, run);
 }
 
 /** Collects the results of a search that was still running. Does not start a new run. */
@@ -137,15 +155,29 @@ export async function searchResults(
   args: SearchArgs & { runId: string },
 ) {
   const token = await tokenFor(userId);
-  const req = toRequest(args);
+  const { req, key, last } = await plan(userId, args);
   const run = await guard(() => getRun(token, args.runId, WAIT_SECS));
-  return collect(userId, token, req, run);
+  return collect(userId, token, req, key, last, run);
+}
+
+/** The request to send: the user's filters, narrowed to what is newer than this search's last run. */
+async function plan(userId: string, args: SearchArgs) {
+  const base = toRequest(args);
+  const key = queryKey(base);
+  const last = await lastRun(userId, base.source, key);
+  return {
+    key,
+    last,
+    req: { ...base, maxAgeDays: windowDays(base.maxAgeDays, last) },
+  };
 }
 
 async function collect(
   userId: string,
   token: string,
   req: SearchRequest,
+  key: string,
+  last: Date | null,
   run: {
     id: string;
     status: string;
@@ -171,19 +203,32 @@ async function collect(
     .select({ url: jobs.url, company: jobs.company, title: jobs.title })
     .from(jobs)
     .where(eq(jobs.userId, userId));
+  const listings = normalizeAll(req.source, items);
+  const known = new Set(await seenIds(userId, req.source));
   const { kept, dropped } = filterListings(
-    normalizeAll(req.source, items),
+    listings,
     req,
     tracked,
+    new Date(),
+    known,
+  );
+  // Everything fetched counts as seen, kept or not: it is not fetched or shown again.
+  await remember(
+    userId,
+    req.source,
+    key,
+    listings.map((l) => l.externalId),
   );
   return {
     status: "done" as const,
     runId: run.id,
     costUsd: run.costUsd,
+    lookedBackDays: req.maxAgeDays,
+    sinceLastSearch: last ? last.toISOString() : null,
     fetched: items.length,
     returned: kept.length,
     dropped,
     listings: kept,
-    next: "Score each listing as in the playbook and add the good ones with create_job (source Naukri or LinkedIn). If few were returned, look at dropped to see which filter cut the most.",
+    next: "Score each listing as in the playbook and add the good ones with create_job (source Naukri or LinkedIn). Listings shown here are remembered and will not come back, so decide on them now. If few were returned, look at dropped to see which filter cut the most.",
   };
 }

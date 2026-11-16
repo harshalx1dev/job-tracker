@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 /**
  * Job search through Apify, kept pure so it can be tested: what to ask each
  * Actor for, how to read what comes back, and which listings to drop before
@@ -16,6 +18,12 @@ export const ACTORS: Record<SearchSource, string> = {
 };
 
 export const MAX_LIMIT = 30;
+/** The same search is not run again within this many hours: nothing new can be expected. */
+export const MIN_GAP_HOURS = 3;
+/** Listings already shown are remembered this long. */
+export const SEEN_DAYS = 45;
+/** Most seen ids sent to LinkedIn's skip list. */
+const MAX_SKIP_IDS = 400;
 export const DEFAULT_LIMIT = 20;
 export const MAX_AGE_DAYS = 30;
 export const DEFAULT_AGE_DAYS = 15;
@@ -58,11 +66,50 @@ export type Listing = {
 
 /* ─────────────────────────── what to ask for ─────────────────────────── */
 
-const freshness = (days: number) => (days <= 7 ? 7 : days <= 15 ? 15 : 30);
+const freshness = (days: number) =>
+  days <= 1 ? 1 : days <= 3 ? 3 : days <= 7 ? 7 : days <= 15 ? 15 : 30;
 const linkedinAge = (days: number) =>
   days <= 1 ? "r86400" : days <= 7 ? "r604800" : "r2592000";
 
-export function actorInput(req: SearchRequest): Record<string, unknown> {
+/** What a search remembers between runs. */
+export type Memory = { skipIds: string[]; stateKey: string };
+
+/** One search, as the same source with the same filters. Its last run decides what is new. */
+export function queryKey(req: SearchRequest): string {
+  const parts = [
+    req.source,
+    norm(req.keywords),
+    norm(req.location),
+    [...req.mustHave].map(norm).sort().join(","),
+    [...req.titleExclude].map(norm).sort().join(","),
+    String(req.experienceYears ?? ""),
+    String(req.directOnly),
+  ];
+  return createHash("sha1").update(parts.join("|")).digest("hex").slice(0, 16);
+}
+
+/** Days to look back: since the last run of this search, never more than the user's limit. */
+export function windowDays(
+  maxAgeDays: number,
+  lastRanAt: Date | null,
+  now = new Date(),
+) {
+  if (!lastRanAt) return maxAgeDays;
+  const days = Math.ceil((now.getTime() - lastRanAt.getTime()) / 86_400_000);
+  return Math.max(1, Math.min(maxAgeDays, days));
+}
+
+export function tooSoon(lastRanAt: Date | null, now = new Date()) {
+  return (
+    lastRanAt !== null &&
+    now.getTime() - lastRanAt.getTime() < MIN_GAP_HOURS * 3_600_000
+  );
+}
+
+export function actorInput(
+  req: SearchRequest,
+  memory?: Memory,
+): Record<string, unknown> {
   if (req.source === "naukri") {
     return {
       keyword: req.keywords,
@@ -79,6 +126,8 @@ export function actorInput(req: SearchRequest): Record<string, unknown> {
       fetchDetails: true,
       descriptionMaxLength: DESCRIPTION_CHARS,
       excludeEmptyFields: true,
+      // Naukri keeps its own record of what it has returned for this search.
+      ...(memory ? { incremental: true, stateKey: memory.stateKey } : {}),
     };
   }
   return {
@@ -87,6 +136,10 @@ export function actorInput(req: SearchRequest): Record<string, unknown> {
     datePosted: linkedinAge(req.maxAgeDays),
     titleExclude: req.titleExclude,
     limit: req.limit,
+    // LinkedIn skips these before returning (and charging for) them.
+    ...(memory?.skipIds.length
+      ? { skipJobId: memory.skipIds.slice(0, MAX_SKIP_IDS) }
+      : {}),
   };
 }
 
@@ -182,6 +235,7 @@ export function normalizeAll(source: SearchSource, items: unknown[]) {
 export type Tracked = { url: string | null; company: string; title: string };
 
 export type Dropped = {
+  alreadySeen: number;
   stale: number;
   noMatch: number;
   wrongPlace: number;
@@ -223,8 +277,10 @@ export function filterListings(
   req: SearchRequest,
   tracked: Tracked[],
   now = new Date(),
+  knownIds: ReadonlySet<string> = new Set(),
 ): { kept: Listing[]; dropped: Dropped } {
   const dropped: Dropped = {
+    alreadySeen: 0,
     stale: 0,
     noMatch: 0,
     wrongPlace: 0,
@@ -250,7 +306,8 @@ export function filterListings(
 
   for (const l of ordered) {
     const key = `${norm(l.company)}|${norm(l.title)}`;
-    if (l.postedAt && Date.parse(l.postedAt) < cutoff) dropped.stale++;
+    if (knownIds.has(l.externalId)) dropped.alreadySeen++;
+    else if (l.postedAt && Date.parse(l.postedAt) < cutoff) dropped.stale++;
     else if (
       !req.mustHave.some((m) =>
         hasTerm(`${l.title} ${l.skills.join(" ")} ${l.description}`, m),

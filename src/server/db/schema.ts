@@ -235,6 +235,37 @@ export const apifyCredentials = pgTable("apify_credentials", {
   updatedAt: updatedAt(),
 });
 
+/** When a search (one source, one set of filters) last finished, so the next one asks only for what is newer. */
+export const searchRuns = pgTable(
+  "search_runs",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    source: text("source").notNull(),
+    queryKey: text("query_key").notNull(),
+    ranAt: timestamp("ran_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.source, t.queryKey] })],
+);
+
+/** Listings a search has already shown, so they are never fetched or shown twice. Pruned after 45 days. */
+export const seenListings = pgTable(
+  "seen_listings",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    source: text("source").notNull(),
+    externalId: text("external_id").notNull(),
+    seenAt: timestamp("seen_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.source, t.externalId] }),
+    index("seen_listings_user_time_idx").on(t.userId, t.seenAt),
+  ],
+);
+
 /**
  * Per-user AI choices: the model for writing and judgement tasks (draft_model)
  * and the lighter one for extraction tasks (basic_model), and what test calls
