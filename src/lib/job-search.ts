@@ -99,6 +99,15 @@ export function windowDays(
   return Math.max(1, Math.min(maxAgeDays, days));
 }
 
+/** "less than a minute ago", "1 minute ago", "40 minutes ago", "2 hours ago". */
+export function agoText(from: Date, now = new Date()) {
+  const mins = Math.floor((now.getTime() - from.getTime()) / 60_000);
+  if (mins < 1) return "less than a minute ago";
+  if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(mins / 60);
+  return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+}
+
 export function tooSoon(lastRanAt: Date | null, now = new Date()) {
   return (
     lastRanAt !== null &&

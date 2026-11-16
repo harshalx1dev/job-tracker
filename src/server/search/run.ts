@@ -12,6 +12,7 @@ import {
   MAX_LIMIT,
   SEARCH_SOURCES,
   actorInput,
+  agoText,
   filterListings,
   normalizeAll,
   queryKey,
@@ -130,7 +131,7 @@ export async function startSearch(userId: string, args: SearchArgs) {
   const { req, key, last } = await plan(userId, args);
   if (tooSoon(last))
     throw new ToolError(
-      `This exact search finished ${Math.max(1, Math.round((Date.now() - last!.getTime()) / 60_000))} minutes ago, so nothing new is expected yet. Change the keywords or place, or wait a few hours.`,
+      `This exact search finished ${agoText(last!)}, so nothing new is expected yet. Change the keywords or place, or wait a few hours.`,
     );
   const skipIds = await seenIds(userId, req.source);
   const run = await guard(() =>

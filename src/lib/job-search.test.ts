@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   actorInput,
+  agoText,
   experienceRange,
   filterListings,
   hasTerm,
@@ -219,6 +220,15 @@ describe("remembering between searches", () => {
     expect(windowDays(15, last, now)).toBe(1);
     expect(windowDays(15, new Date("2026-11-12T10:00:00Z"), now)).toBe(5);
     expect(windowDays(15, new Date("2026-09-01T00:00:00Z"), now)).toBe(15);
+  });
+
+  it("says how long ago a search ran, in singular and plural", () => {
+    const at = (m: number) => new Date(now.getTime() - m * 60_000);
+    expect(agoText(at(0), now)).toBe("less than a minute ago");
+    expect(agoText(at(1), now)).toBe("1 minute ago");
+    expect(agoText(at(40), now)).toBe("40 minutes ago");
+    expect(agoText(at(60), now)).toBe("1 hour ago");
+    expect(agoText(at(150), now)).toBe("2 hours ago");
   });
 
   it("refuses an identical repeat within three hours", () => {
