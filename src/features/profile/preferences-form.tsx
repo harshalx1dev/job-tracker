@@ -12,6 +12,7 @@ import {
   SCORE_DEALBREAKERS,
   SCORE_FACTORS,
 } from "@/lib/match-scoring";
+import { JOB_SOURCES } from "@/lib/job-sources";
 import { WORK_MODES, type Preferences } from "@/lib/preferences";
 import { savePreferences } from "@/server/profile/preferences-actions";
 import { cn } from "@/lib/utils";
@@ -102,6 +103,37 @@ export function PreferencesForm({ initial }: { initial: Preferences }) {
           onChange={(e) => set("avoid", e.target.value)}
           rows={2}
         />
+      </Field>
+      <Field
+        label="Where Claude searches"
+        hint="Turn on the sites to search. Claude visits them in your own browser, one after another, so sites that need a sign-in need you signed in first. More sites means a longer run."
+      >
+        <ul className="divide-y rounded-lg border">
+          {JOB_SOURCES.map((s) => (
+            <li key={s.id}>
+              <label className="flex cursor-pointer items-start gap-3 px-3 py-2.5 text-sm">
+                <Switch
+                  className="mt-0.5"
+                  checked={p.sources.includes(s.id)}
+                  onCheckedChange={(v) =>
+                    setP((cur) => ({
+                      ...cur,
+                      sources: v
+                        ? [...cur.sources, s.id]
+                        : cur.sources.filter((x) => x !== s.id),
+                    }))
+                  }
+                />
+                <span>
+                  <span className="font-medium">{s.label}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {s.hint}
+                  </span>
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
       </Field>
       <Field
         label="Applications prepared per run"

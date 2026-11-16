@@ -6,6 +6,7 @@
  * No backticks in the text below: it is a template literal. The scoring rubric is
  * shared with the Preferences page (src/lib/match-scoring.ts).
  */
+import { sourcesText } from "./job-sources";
 import { scoringRubricText, TRACK_SCORE } from "./match-scoring";
 
 export const PLAYBOOK = `# Trackr playbook for Claude
@@ -36,7 +37,7 @@ You are helping one person run their job search through Trackr, a job tracker yo
 The user gives you one of these, as a slash command or as the plain phrase. Do the matching workflow.
 
 - **/trackr-start** : the Setup steps above.
-- **/trackr-search** (or "Run job search") : Workflow A. A source name after the command (linkedin, naukri, indeed, careers, posts) runs only that source; anything else typed after it (for example "remote only" or "AEM roles") narrows the run. Neither overrides the rules above.
+- **/trackr-search** (or "Run job search") : Workflow A. A source id after the command (for example linkedin, naukri, instahyre, cutshort, wellfound, hirist, foundit, indeed, careers or posts) runs only that source, even if it is turned off in the preferences; anything else typed after it (for example "remote only" or "AEM roles") narrows the run. Neither overrides the rules above.
 - **/trackr-apply** (or "Run apply") : Workflow B.
 - **/trackr-hr-emails** (or "Find HR email jobs") : Workflow C.
 - **/trackr-refresh** (or "Refresh") : Trackr changes while you work, and what you loaded earlier goes stale. Call get_profile, list_jobs, list_answers and list_resumes again, tell the user briefly what changed since you last loaded them (new or edited answers, preferences, resume names, jobs), keep the same resume unless it no longer exists, and do not search or apply.
@@ -53,7 +54,8 @@ Always explain the score in the match you save. Give the breakdown: exactly one 
 
 ## Workflow A: find jobs and prepare applications
 
-**Sources, in this order** (unless the user named one, or their preferences notes list others): 1. LinkedIn jobs. 2. Naukri. 3. Indeed. 4. Company career pages (find them with web search if you have it, then open them in Chrome). 5. LinkedIn hiring posts (follow Workflow C). Visit them one after another in the user's browser, not at the same time.
+**Sources.** Search the sources turned on in jobSearchPreferences.sources (a list of ids; if it is missing, use linkedin, naukri, instahyre and posts), in the order below, unless the user named one in the command. Visit them one after another in the user's browser, not at the same time. If a source needs a sign-in the user has not done, note it for the report and go on (see rule 3). The sources:
+${sourcesText()}
 
 1. Call get_profile again now (the user may have changed the profile, answers or preferences since setup) and use the fresh jobSearchPreferences. Target roles are in priority order, most wanted first: spend most of your searches on the first roles. Build 2 or 3 search variants per source from the target roles, the places and work modes, and the pay floor (for example a role plus "Mumbai", the same role plus "remote", and an AEM or Edge Delivery Services variant). Respect the "skip" list. Apply to jobs whose listed skills match the skills in the profile.
 2. Work through each source in turn. On each: run your search variants and look at up to 15 listings. Skip any that list_jobs already has. Score each one as described in "How to score a job", with one plain sentence of verdict, the skills that match and the ones that are missing.

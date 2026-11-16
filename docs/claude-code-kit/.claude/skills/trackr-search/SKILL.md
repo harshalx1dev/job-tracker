@@ -1,7 +1,7 @@
 ---
 name: trackr-search
 description: Search for jobs that fit the user's Preferences and prepare applications (never submits)
-argument-hint: "[linkedin | naukri | indeed | careers | posts, or a focus like: remote only]"
+argument-hint: "[a source: linkedin | naukri | instahyre | cutshort | wellfound | hirist | foundit | indeed | careers | posts, or a focus like: remote only]"
 disable-model-invocation: true
 ---
 

@@ -15,6 +15,7 @@ describe("preferences", () => {
       avoid: "",
       maxPerSession: 5,
       minScore: 70,
+      sources: ["linkedin", "naukri", "instahyre", "posts"],
       summaryEmail: false,
       notes: "",
     });
@@ -32,6 +33,21 @@ describe("preferences", () => {
     expect(readPreferences({ roles: "x" }).summaryEmail).toBe(false);
     expect(preferencesSchema.parse({ summaryEmail: true }).summaryEmail).toBe(
       true,
+    );
+  });
+
+  it("searches four sources until the user changes them, and rejects unknown ones", () => {
+    expect(readPreferences({ roles: "x" }).sources).toEqual([
+      "linkedin",
+      "naukri",
+      "instahyre",
+      "posts",
+    ]);
+    expect(preferencesSchema.parse({ sources: ["hirist"] }).sources).toEqual([
+      "hirist",
+    ]);
+    expect(preferencesSchema.safeParse({ sources: ["orkut"] }).success).toBe(
+      false,
     );
   });
 
