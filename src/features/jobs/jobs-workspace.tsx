@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { NEW_JOB_EVENT } from "@/components/app-shell/command-menu";
 import { archiveJob, deleteJob, moveJob } from "@/server/jobs/actions";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,8 @@ export function JobsWorkspace({
   }>({ open: false });
   const [confirmDelete, setConfirmDelete] = useState<Job | null>(null);
   const [deleting, startDelete] = useTransition();
+  const [confirmArchive, setConfirmArchive] = useState<Job | null>(null);
+  const [archiveReason, setArchiveReason] = useState("");
 
   const visible = useMemo(
     () => jobs.filter((j) => matchesQuery(j, q)),
@@ -167,10 +170,12 @@ export function JobsWorkspace({
     [jobs, move],
   );
 
-  async function archive(job: Job) {
+  async function archive(job: Job, reason: string) {
+    setConfirmArchive(null);
+    setArchiveReason("");
     setOpenId(null);
     setJobs((all) => all.filter((j) => j.id !== job.id));
-    const res = await archiveJob(job.id);
+    const res = await archiveJob(job.id, true, reason);
     if (!res.ok) return toast.error(res.error);
     toast(`Archived ${job.company}`, {
       action: { label: "Undo", onClick: () => void archiveJob(job.id, false) },
@@ -318,9 +323,50 @@ export function JobsWorkspace({
         onOpenChange={(open) => !open && void setOpenId(null)}
         onStatusChange={changeStatus}
         onEdit={(job) => setForm({ open: true, job })}
-        onArchive={archive}
+        onArchive={setConfirmArchive}
         onDelete={setConfirmDelete}
       />
+
+      <Dialog
+        open={Boolean(confirmArchive)}
+        onOpenChange={(o) => {
+          if (!o) {
+            setConfirmArchive(null);
+            setArchiveReason("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Archive this job?</DialogTitle>
+            <DialogDescription>
+              {confirmArchive?.title} at {confirmArchive?.company} moves out of
+              your board. Add a reason if you like (optional).
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={archiveReason}
+            onChange={(e) => setArchiveReason(e.target.value)}
+            maxLength={500}
+            rows={3}
+            placeholder="e.g. Salary too low, role is on-site only"
+            aria-label="Reason for archiving"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmArchive(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                confirmArchive && void archive(confirmArchive, archiveReason)
+              }
+            >
+              Archive
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={Boolean(confirmDelete)}

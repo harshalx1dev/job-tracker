@@ -148,8 +148,10 @@ export async function moveJob(
 export async function archiveJob(
   jobId: string,
   archived = true,
+  reason?: string,
 ): Promise<ActionResult> {
   const user = await requireUser();
+  const note = archived ? reason?.trim().slice(0, 500) : undefined;
   const res = await db
     .update(jobs)
     .set({ archivedAt: archived ? new Date() : null })
@@ -160,6 +162,7 @@ export async function archiveJob(
     jobId,
     userId: user.id,
     type: archived ? "archived" : "restored",
+    payload: note ? { reason: note } : null,
   });
   refresh();
   return { ok: true, data: undefined };

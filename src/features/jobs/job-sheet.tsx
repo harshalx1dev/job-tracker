@@ -273,7 +273,16 @@ export function JobSheet({
                                 </>
                               )}
                               {e.type === "updated" && "Details updated"}
-                              {e.type === "archived" && "Archived"}
+                              {e.type === "archived" && (
+                                <>
+                                  Archived
+                                  {typeof e.payload?.reason === "string" && (
+                                    <span className="block text-xs text-muted-foreground">
+                                      {e.payload.reason}
+                                    </span>
+                                  )}
+                                </>
+                              )}
                               {e.type === "restored" && "Restored"}
                               {e.type === "note" && "Note added"}
                             </p>
