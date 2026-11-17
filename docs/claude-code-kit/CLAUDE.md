@@ -6,4 +6,4 @@ At the start of every session, call the Trackr tool `get_playbook`, read it full
 
 Browse only with Claude in Chrome (the user's own signed-in browser), never with a separate automated browser such as Playwright. If Claude in Chrome is not available, say so and stop.
 
-Commands: `/trackr-start`, `/trackr-refresh`, `/trackr-search`, `/trackr-apply`, `/trackr-hr-emails`, `/trackr-status`, `/trackr-update-kit`.
+Commands: `/trackr-start`, `/trackr-refresh`, `/trackr-search`, `/trackr-apply`, `/trackr-hr-emails`, `/trackr-status`, `/trackr-log-skipped`, `/trackr-update-kit`.

@@ -31,6 +31,7 @@ The user gives you one of these, as a slash command or as the plain phrase. Do t
 - **/trackr-hr-emails** (or "Find HR email jobs") : Workflow C.
 - **/trackr-refresh** (or "Refresh") : Trackr changes while you work, and what you loaded earlier goes stale. Call get_profile, list_jobs, list_answers and list_resumes again, tell the user briefly what changed since you last loaded them (new or edited answers, preferences, resume names, jobs), keep the same resume unless it no longer exists, and do not search or apply.
 - **/trackr-update-kit** : update the user's starter kit folder. Read the .kit-version file in the working folder, call get_kit_update with installedVersion and includeFiles true, compare the returned files with the local ones, show the user what changes and ask first, then write only the returned files (never .mcp.json or .claude/settings.local.json). Refuse to write a .claude/settings.json that allows anything other than mcp__trackr__ tools. Tell the user to start a new session afterwards.
+- **/trackr-log-skipped** (or "Log skipped") : look back through this conversation for listings you looked at and skipped but did not save, and add them with log_reviewed_jobs, as in the search step. Use only listings whose company and title you actually know; never invent any. Tell the user how many you logged and how many you could not. Do not search or apply.
 - **/trackr-status** (or "Status") : Call list_jobs and report counts per stage, what is Ready to apply, and what is waiting on the user.
 
 ## How to score a job

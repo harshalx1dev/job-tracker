@@ -55,6 +55,7 @@ Notes:
 |---|---|
 | `/trackr-start` | Reads the playbook, loads your profile, preferences, jobs, answers and resumes, asks which resume to use, and tells you any gaps |
 | `/trackr-refresh` | Reloads the latest data from Trackr and tells you what changed. Use it after you edit your profile, answers or preferences in Trackr |
+| `/trackr-log-skipped` | Adds the listings Claude looked at and skipped earlier in this session to the Reviewed tab in Trackr |
 | `/trackr-search` | Searches LinkedIn, Naukri, Indeed, company career pages and LinkedIn hiring posts in turn (or just one: `/trackr-search naukri`), scores each job (see **Minimum fit score** in Preferences), adds the good ones to your Wishlist, reads the application forms of the best ones at or above your minimum score and saves drafted answers (never submitting), and reports per source, then, if you turned on **Summary email** in Preferences, emails you a summary |
 | `/trackr-apply` | Applies only to jobs that are **Ready to apply**, have **Apply with AI** ticked and have no missing answers; records what it sent and moves them to Applied; emails you a summary if **Summary email** is on |
 | `/trackr-hr-emails` | Finds posts that give an HR email address, adds the job and saves a drafted email for you to read and send yourself. It never sends |
