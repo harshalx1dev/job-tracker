@@ -22,7 +22,7 @@ import { applyReadiness } from "@/lib/apply-readiness";
 import { getProfile } from "@/server/profile/queries";
 import { getBackground } from "@/server/profile/question-queries";
 import { getPreferences } from "@/server/profile/preferences";
-import { getJob, listApplications } from "@/server/jobs/queries";
+import { getJob, listApplications, listArchived } from "@/server/jobs/queries";
 import { listStatuses } from "@/server/jobs/statuses";
 
 /*
@@ -157,6 +157,37 @@ export async function readJobs(
     returned: list.length,
     truncated: total > list.length,
     jobs: list,
+  };
+}
+
+/** Jobs the user archived, with their reasons, so searches skip them and any company issues. */
+export async function readArchivedJobs(
+  userId: string,
+  opts: { query?: string; limit?: number } = {},
+) {
+  const all = await listArchived(userId);
+  const q = opts.query?.toLowerCase();
+  const matched = q
+    ? all.filter(
+        (j) =>
+          j.company.toLowerCase().includes(q) ||
+          j.title.toLowerCase().includes(q),
+      )
+    : all;
+  const rows = matched.slice(0, Math.min(opts.limit ?? 50, 50));
+  return {
+    total: matched.length,
+    returned: rows.length,
+    truncated: matched.length > rows.length,
+    jobs: rows.map((j) => ({
+      id: j.id,
+      company: j.company,
+      title: j.title,
+      url: j.url,
+      source: j.source,
+      archivedAt: j.archivedAt,
+      reason: j.archiveReason,
+    })),
   };
 }
 

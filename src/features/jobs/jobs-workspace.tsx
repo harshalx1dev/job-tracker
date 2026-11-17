@@ -10,7 +10,14 @@ import {
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { generateKeyBetween } from "fractional-indexing";
 import { motion } from "motion/react";
-import { KanbanSquare, List, Loader2, Plus, Search } from "lucide-react";
+import {
+  Archive,
+  KanbanSquare,
+  List,
+  Loader2,
+  Plus,
+  Search,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,27 +33,32 @@ import { Textarea } from "@/components/ui/textarea";
 import { NEW_JOB_EVENT } from "@/components/app-shell/command-menu";
 import { archiveJob, deleteJob, moveJob } from "@/server/jobs/actions";
 import { cn } from "@/lib/utils";
+import { ArchivedView, type ArchivedJob } from "./archived-view";
 import { BoardView } from "./board-view";
 import { JobFormDialog } from "./job-form-dialog";
 import { JobSheet } from "./job-sheet";
 import { ListView } from "./list-view";
 import { byPosition, matchesQuery, type Job, type Status } from "./utils";
 
-const VIEWS = ["board", "list"] as const;
+const VIEWS = ["board", "list", "archived"] as const;
 
 export function JobsWorkspace({
   statuses,
   jobs: serverJobs,
+  archived: serverArchived,
 }: {
   statuses: Status[];
   jobs: Job[];
+  archived: ArchivedJob[];
 }) {
   // Local copy for optimistic updates; resync whenever the server sends fresh data.
   const [jobs, setJobs] = useState(serverJobs);
+  const [archived, setArchived] = useState(serverArchived);
   const [syncedFrom, setSyncedFrom] = useState(serverJobs);
   if (serverJobs !== syncedFrom) {
     setSyncedFrom(serverJobs);
     setJobs(serverJobs);
+    setArchived(serverArchived);
   }
 
   const [view, setView] = useQueryState(
@@ -68,6 +80,10 @@ export function JobsWorkspace({
   const visible = useMemo(
     () => jobs.filter((j) => matchesQuery(j, q)),
     [jobs, q],
+  );
+  const visibleArchived = useMemo(
+    () => archived.filter((j) => matchesQuery(j, q)),
+    [archived, q],
   );
   const openJob = jobs.find((j) => j.id === openId);
   const openJobById = useCallback(
@@ -182,6 +198,16 @@ export function JobsWorkspace({
     });
   }
 
+  async function unarchive(job: ArchivedJob) {
+    setArchived((all) => all.filter((j) => j.id !== job.id));
+    const res = await archiveJob(job.id, false);
+    if (!res.ok) {
+      setArchived((all) => [job, ...all]);
+      return toast.error(res.error);
+    }
+    toast(`Restored ${job.company}`);
+  }
+
   function remove(job: Job) {
     startDelete(async () => {
       await deleteJob(job.id);
@@ -247,7 +273,8 @@ export function JobsWorkspace({
           className="relative flex h-9 items-center rounded-lg border bg-surface p-0.5"
         >
           {VIEWS.map((v) => {
-            const Icon = v === "board" ? KanbanSquare : List;
+            const Icon =
+              v === "board" ? KanbanSquare : v === "list" ? List : Archive;
             const selected = view === v;
             return (
               <button
@@ -298,6 +325,8 @@ export function JobsWorkspace({
             onOpen={openJobById}
             onAdd={openNew}
           />
+        ) : view === "archived" ? (
+          <ArchivedView jobs={visibleArchived} onUnarchive={unarchive} />
         ) : (
           <ListView
             statuses={statuses}

@@ -5,6 +5,7 @@
       "mcp__trackr__get_profile",
       "mcp__trackr__list_statuses",
       "mcp__trackr__list_jobs",
+      "mcp__trackr__list_archived_jobs",
       "mcp__trackr__get_job",
       "mcp__trackr__list_resumes",
       "mcp__trackr__get_resume",

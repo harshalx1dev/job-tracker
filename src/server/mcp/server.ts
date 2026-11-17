@@ -110,6 +110,27 @@ export function createTrackrServer(auth: McpAuth) {
     server,
     auth,
     {
+      name: "list_archived_jobs",
+      title: "List archived jobs and why",
+      description:
+        "Jobs the user archived, newest first, each with the reason they gave (reason is null when they gave none). Call it before searching: never add an archived job again, skip other roles at a company whose reason names a company problem (pay, culture, location, a bad experience), and let the reasons shape what you look for. Returns up to 50 with the full count; filter by company or title with query.",
+      scope: "read",
+      input: {
+        query: z
+          .string()
+          .max(100)
+          .optional()
+          .describe("Matches company or title"),
+        limit,
+      },
+    },
+    (args, userId) => read.readArchivedJobs(userId, args),
+  );
+
+  tool(
+    server,
+    auth,
+    {
       name: "list_jobs_to_apply",
       title: "Jobs the user asked you to apply to",
       description:

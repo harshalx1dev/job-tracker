@@ -1,23 +1,59 @@
 import "server-only";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/server/db";
 import { jobApplications, jobEvents, jobs } from "@/server/db/schema";
 import { listStatuses } from "./statuses";
 
+/** Archived jobs, most recently archived first, each with the reason the user gave (if any). */
+export async function listArchived(userId: string) {
+  const rows = await db
+    .select()
+    .from(jobs)
+    .where(and(eq(jobs.userId, userId), isNotNull(jobs.archivedAt)))
+    .orderBy(desc(jobs.archivedAt));
+  if (!rows.length) return [];
+  const events = await db
+    .select({
+      jobId: jobEvents.jobId,
+      payload: jobEvents.payload,
+    })
+    .from(jobEvents)
+    .where(
+      and(
+        eq(jobEvents.userId, userId),
+        eq(jobEvents.type, "archived"),
+        inArray(
+          jobEvents.jobId,
+          rows.map((r) => r.id),
+        ),
+      ),
+    )
+    .orderBy(desc(jobEvents.createdAt));
+  const reasons = new Map<string, string>();
+  for (const e of events) {
+    // Newest first: keep the first one seen per job.
+    if (!reasons.has(e.jobId) && typeof e.payload?.reason === "string")
+      reasons.set(e.jobId, e.payload.reason);
+  }
+  return rows.map((j) => ({ ...j, archiveReason: reasons.get(j.id) ?? null }));
+}
+export type ArchivedJob = Awaited<ReturnType<typeof listArchived>>[number];
+
 /** Board data for a user: statuses (ordered) and active jobs (ordered by position). */
 export async function getBoard(userId: string) {
-  const [statusRows, jobRows] = await Promise.all([
+  const [statusRows, jobRows, archived] = await Promise.all([
     listStatuses(userId),
     db
       .select()
       .from(jobs)
       .where(and(eq(jobs.userId, userId), isNull(jobs.archivedAt))),
+    listArchived(userId),
   ]);
   // Fractional-index keys must be compared bytewise, not with DB collation.
   jobRows.sort((a, b) =>
     a.position < b.position ? -1 : a.position > b.position ? 1 : 0,
   );
-  return { statuses: statusRows, jobs: jobRows };
+  return { statuses: statusRows, jobs: jobRows, archived };
 }
 
 export async function getJob(userId: string, jobId: string) {

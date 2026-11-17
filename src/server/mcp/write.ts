@@ -3,10 +3,10 @@ import {
   and,
   asc,
   count,
+  desc,
   eq,
   gte,
   inArray,
-  isNull,
   or,
   sql,
 } from "drizzle-orm";
@@ -127,6 +127,22 @@ export type AddJobInput = Record<string, unknown> & {
   force?: boolean;
 };
 
+async function latestArchiveReason(userId: string, jobId: string) {
+  const [e] = await db
+    .select({ payload: jobEvents.payload })
+    .from(jobEvents)
+    .where(
+      and(
+        eq(jobEvents.jobId, jobId),
+        eq(jobEvents.userId, userId),
+        eq(jobEvents.type, "archived"),
+      ),
+    )
+    .orderBy(desc(jobEvents.createdAt))
+    .limit(1);
+  return typeof e?.payload?.reason === "string" ? e.payload.reason : null;
+}
+
 export async function addJob(userId: string, input: AddJobInput) {
   const { status, match, force, ...fields } = input;
   const stage = await resolveStage(userId, status);
@@ -149,24 +165,34 @@ export async function addJob(userId: string, input: AddJobInput) {
         company: jobs.company,
         title: jobs.title,
         stage: statuses.name,
+        archivedAt: jobs.archivedAt,
       })
       .from(jobs)
       .innerJoin(statuses, eq(statuses.id, jobs.statusId))
       .where(
         and(
           eq(jobs.userId, userId),
-          isNull(jobs.archivedAt),
           url ? or(same, sql`rtrim(${jobs.url}, '/') = ${url}`) : same,
         ),
       )
       .limit(1);
-    if (dup)
+    if (dup) {
+      const { archivedAt, ...existing } = dup;
+      const archiveReason = archivedAt
+        ? await latestArchiveReason(userId, dup.id)
+        : null;
       return {
         created: false,
-        reason:
-          "A job with the same URL or the same company and title is already on the board. Nothing was added. Use update_job to change it, or pass force: true to add it anyway.",
-        existing: { ...dup, link: appLink(`/app/jobs?job=${dup.id}`) },
+        reason: archivedAt
+          ? `The user archived this job${archiveReason ? ` (reason: ${archiveReason})` : " (no reason given)"}. Nothing was added. Do not add it again unless the user asks; pass force: true only on their instruction.`
+          : "A job with the same URL or the same company and title is already on the board. Nothing was added. Use update_job to change it, or pass force: true to add it anyway.",
+        existing: {
+          ...existing,
+          archived: Boolean(archivedAt),
+          link: appLink(`/app/jobs?job=${dup.id}`),
+        },
       };
+    }
   }
 
   const row = await insertJob(userId, parsed.data, {
