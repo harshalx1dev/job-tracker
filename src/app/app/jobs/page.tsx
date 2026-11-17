@@ -17,8 +17,8 @@ export default function JobsPage() {
 
 async function JobsLoader() {
   const user = await requireUser();
-  const { statuses, jobs, archived } = await getBoard(user.id);
-  return <JobsWorkspace statuses={statuses} jobs={jobs} archived={archived} />;
+  const { statuses, jobs, archived, reviewed } = await getBoard(user.id);
+  return <JobsWorkspace statuses={statuses} jobs={jobs} archived={archived} reviewed={reviewed} />;
 }
 
 function BoardSkeleton() {

@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/server/db";
 import { jobApplications, jobEvents, jobs } from "@/server/db/schema";
 import { listStatuses } from "./statuses";
+import { listReviewed } from "./reviewed";
 
 /** Archived jobs, most recently archived first, each with the reason the user gave (if any). */
 export async function listArchived(userId: string) {
@@ -41,19 +42,21 @@ export type ArchivedJob = Awaited<ReturnType<typeof listArchived>>[number];
 
 /** Board data for a user: statuses (ordered) and active jobs (ordered by position). */
 export async function getBoard(userId: string) {
-  const [statusRows, jobRows, archived] = await Promise.all([
+  const [statusRows, jobRows, archived, reviewed] = await Promise.all([
     listStatuses(userId),
     db
       .select()
       .from(jobs)
       .where(and(eq(jobs.userId, userId), isNull(jobs.archivedAt))),
     listArchived(userId),
+    // Empty (not an error) until the reviewed_jobs migration has run.
+    listReviewed(userId).catch(() => []),
   ]);
   // Fractional-index keys must be compared bytewise, not with DB collation.
   jobRows.sort((a, b) =>
     a.position < b.position ? -1 : a.position > b.position ? 1 : 0,
   );
-  return { statuses: statusRows, jobs: jobRows, archived };
+  return { statuses: statusRows, jobs: jobRows, archived, reviewed };
 }
 
 export async function getJob(userId: string, jobId: string) {

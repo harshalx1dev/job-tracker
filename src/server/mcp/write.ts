@@ -13,6 +13,7 @@ import {
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
 import { db } from "@/server/db";
+import { logReviewed } from "@/server/jobs/reviewed";
 import {
   answers,
   jobApplications,
@@ -199,6 +200,17 @@ export async function addJob(userId: string, input: AddJobInput) {
     claudeMatch: match ? toMatch(match) : undefined,
     eventPayload: { via: "claude" },
   });
+  await logReviewed(userId, [
+    {
+      company: parsed.data.company,
+      title: parsed.data.title,
+      url: parsed.data.url || undefined,
+      source: parsed.data.source || "Claude",
+      decision: "saved",
+      score: match?.score,
+      reason: (match?.verdict ?? "Added to the board").slice(0, 300),
+    },
+  ]).catch(() => {});
   return {
     created: true,
     id: row.id,

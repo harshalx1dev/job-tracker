@@ -4,6 +4,7 @@ import { z } from "zod";
 import { outreachSaveSchema } from "@/lib/outreach";
 import type { McpAuth } from "./tokens";
 import { tool } from "./tool";
+import { logReviewed, reviewedEntrySchema } from "@/server/jobs/reviewed";
 import { applicationInputSchema } from "@/lib/application-summary";
 import {
   addJob,
@@ -57,6 +58,28 @@ export function registerWriteTools(server: McpServer, auth: McpAuth) {
       input: resultShape,
     },
     (args, userId) => searchResults(userId, args),
+  );
+
+  tool(
+    server,
+    auth,
+    {
+      name: "log_reviewed_jobs",
+      title: "Log the listings you looked at",
+      description:
+        "Records every listing you looked at and passed over, so the user can check later that nothing good was skipped. Call it at the end of each source (up to 50 entries per call) with every listing you scored or skipped and did NOT save with create_job: company, title, url if you have it, source, decision 'skipped', your score if you scored it, and one short plain reason (for example 'needs TypeScript', 'senior, 8+ years', 'pay below her minimum', 'already archived'). Jobs you save with create_job are logged automatically. Logging the same listing again updates it.",
+      scope: "write",
+      input: {
+        entries: z
+          .array(reviewedEntrySchema)
+          .min(1)
+          .max(50)
+          .describe("The listings you looked at and skipped"),
+      },
+    },
+    async (args, userId) => ({
+      logged: await logReviewed(userId, args.entries),
+    }),
   );
 
   tool(

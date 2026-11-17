@@ -12,6 +12,7 @@ import { generateKeyBetween } from "fractional-indexing";
 import { motion } from "motion/react";
 import {
   Archive,
+  ClipboardCheck,
   KanbanSquare,
   List,
   Loader2,
@@ -35,21 +36,24 @@ import { archiveJob, deleteJob, moveJob } from "@/server/jobs/actions";
 import { cn } from "@/lib/utils";
 import { ArchivedView, type ArchivedJob } from "./archived-view";
 import { BoardView } from "./board-view";
+import { ReviewedView, type ReviewedJob } from "./reviewed-view";
 import { JobFormDialog } from "./job-form-dialog";
 import { JobSheet } from "./job-sheet";
 import { ListView } from "./list-view";
 import { byPosition, matchesQuery, type Job, type Status } from "./utils";
 
-const VIEWS = ["board", "list", "archived"] as const;
+const VIEWS = ["board", "list", "archived", "reviewed"] as const;
 
 export function JobsWorkspace({
   statuses,
   jobs: serverJobs,
   archived: serverArchived,
+  reviewed,
 }: {
   statuses: Status[];
   jobs: Job[];
   archived: ArchivedJob[];
+  reviewed: ReviewedJob[];
 }) {
   // Local copy for optimistic updates; resync whenever the server sends fresh data.
   const [jobs, setJobs] = useState(serverJobs);
@@ -274,7 +278,13 @@ export function JobsWorkspace({
         >
           {VIEWS.map((v) => {
             const Icon =
-              v === "board" ? KanbanSquare : v === "list" ? List : Archive;
+              v === "board"
+                ? KanbanSquare
+                : v === "list"
+                  ? List
+                  : v === "archived"
+                    ? Archive
+                    : ClipboardCheck;
             const selected = view === v;
             return (
               <button
@@ -325,6 +335,8 @@ export function JobsWorkspace({
             onOpen={openJobById}
             onAdd={openNew}
           />
+        ) : view === "reviewed" ? (
+          <ReviewedView rows={reviewed} query={q} />
         ) : view === "archived" ? (
           <ArchivedView jobs={visibleArchived} onUnarchive={unarchive} />
         ) : (

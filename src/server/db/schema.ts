@@ -266,6 +266,33 @@ export const seenListings = pgTable(
   ],
 );
 
+/** Every listing Claude looked at during a search and what it decided, so a skipped job can be reviewed later. One row per listing. */
+export const reviewedJobs = pgTable(
+  "reviewed_jobs",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /** Lowercased URL, or "company|title" when there is no URL. Repeats update the same row. */
+    key: text("key").notNull(),
+    source: text("source").notNull(),
+    company: text("company").notNull(),
+    title: text("title").notNull(),
+    url: text("url"),
+    decision: text("decision", { enum: ["saved", "skipped"] }).notNull(),
+    score: integer("score"),
+    reason: text("reason").notNull(),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("reviewed_jobs_user_key_idx").on(t.userId, t.key),
+    index("reviewed_jobs_user_time_idx").on(t.userId, t.reviewedAt),
+  ],
+);
+
 /**
  * Per-user AI choices: the model for writing and judgement tasks (draft_model)
  * and the lighter one for extraction tasks (basic_model), and what test calls
