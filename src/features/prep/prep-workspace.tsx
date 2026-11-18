@@ -14,10 +14,13 @@ import {
   Lock,
   RefreshCw,
   RotateCcw,
+  Search,
   Sparkles,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { PLAN_LABELS, type PlanKind } from "@/lib/prep";
 import type { PlanView } from "@/server/prep/queries";
@@ -52,6 +55,32 @@ const STATE_META: Record<
   },
 };
 
+const PRIORITIES = ["P1", "P2", "P3"] as const;
+const STATUS_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "todo", label: "To do" },
+  { id: "done", label: "Done" },
+  { id: "confident", label: "Confident" },
+  { id: "revise", label: "Revise" },
+] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number]["id"];
+
+const SORTS = [
+  { id: "plan", label: "Plan order" },
+  { id: "priority", label: "Priority" },
+  { id: "short", label: "Shortest first" },
+  { id: "long", label: "Longest first" },
+  { id: "asked", label: "Most asked" },
+] as const;
+type SortId = (typeof SORTS)[number]["id"];
+
+const sorters: Record<Exclude<SortId, "plan">, (a: Item, b: Item) => number> = {
+  priority: (a, b) => a.priority.localeCompare(b.priority),
+  short: (a, b) => a.estMinutes - b.estMinutes,
+  long: (a, b) => b.estMinutes - a.estMinutes,
+  asked: (a, b) => b.frequency - a.frequency,
+};
+
 const fmtMin = (m: number) =>
   m >= 60
     ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}`
@@ -68,12 +97,54 @@ export function PrepWorkspace({
   canTrack: boolean;
 }) {
   const [progress, setLocal] = useState<Record<string, string>>(view.progress);
-  const [focus, setFocus] = useState<number | null>(null);
+  // The list is frozen when Focus mode opens, so marking a question never shifts it under a filter.
+  const [focus, setFocus] = useState<{ items: Item[]; index: number } | null>(
+    null,
+  );
+  const [search, setSearch] = useState("");
+  const [priorities, setPriorities] = useState<string[]>([]);
+  const [topic, setTopic] = useState("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [sort, setSort] = useState<SortId>("plan");
   const kind = view.plan.kind as PlanKind;
 
-  const groups = useMemo(() => {
-    const map = new Map<string, Item[]>();
+  const topics = useMemo(() => {
+    const map = new Map<string, { total: number; done: number }>();
     for (const it of view.items) {
+      const t = map.get(it.topic) ?? { total: 0, done: 0 };
+      t.total += 1;
+      if (progress[it.id] === "done" || progress[it.id] === "confident")
+        t.done += 1;
+      map.set(it.topic, t);
+    }
+    return [...map.entries()];
+  }, [view.items, progress]);
+
+  const filtering =
+    search.trim() !== "" ||
+    priorities.length > 0 ||
+    topic !== "all" ||
+    status !== "all";
+
+  /** The questions on screen (and in Focus mode): filtered, then sorted. */
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = view.items.filter((it) => {
+      const st = progress[it.id];
+      return (
+        (!q || it.question.toLowerCase().includes(q)) &&
+        (priorities.length === 0 || priorities.includes(it.priority)) &&
+        (topic === "all" || it.topic === topic) &&
+        (status === "all" || (status === "todo" ? !st : st === status))
+      );
+    });
+    return sort === "plan" ? list : [...list].sort(sorters[sort]);
+  }, [view.items, progress, search, priorities, topic, status, sort]);
+
+  const groups = useMemo(() => {
+    if (sort !== "plan") return [["Sorted", shown]] as [string, Item[]][];
+    const map = new Map<string, Item[]>();
+    for (const it of shown) {
       const key =
         kind === "full"
           ? it.topic
@@ -83,7 +154,7 @@ export function PrepWorkspace({
       map.set(key, [...(map.get(key) ?? []), it]);
     }
     return [...map.entries()];
-  }, [view.items, kind]);
+  }, [shown, kind, sort]);
 
   const total = view.items.length;
   const done = view.items.filter(
@@ -138,10 +209,10 @@ export function PrepWorkspace({
         </div>
         <Button
           variant="outline"
-          onClick={() => setFocus(0)}
-          disabled={total === 0}
+          onClick={() => setFocus({ items: shown, index: 0 })}
+          disabled={shown.length === 0}
         >
-          <Focus /> Focus mode
+          <Focus /> Focus mode{filtering ? ` (${shown.length})` : ""}
         </Button>
         {mode === "owner" && <ShareControl view={view} />}
       </header>
@@ -170,9 +241,124 @@ export function PrepWorkspace({
         </div>
       )}
 
+      {total > 0 && (
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full sm:w-64">
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search questions"
+                className="h-8 pl-8"
+                aria-label="Search questions"
+              />
+            </div>
+            <select
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              aria-label="Topic"
+              className="h-8 rounded-md border bg-background px-2 text-sm"
+            >
+              <option value="all">All topics</option>
+              {topics.map(([t, c]) => (
+                <option key={t} value={t}>
+                  {t} · {canTrack ? `${c.done}/${c.total}` : c.total}
+                </option>
+              ))}
+            </select>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortId)}
+              aria-label="Sort"
+              className="h-8 rounded-md border bg-background px-2 text-sm"
+            >
+              {SORTS.map((o) => (
+                <option key={o.id} value={o.id}>
+                  Sort: {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {PRIORITIES.map((p) => {
+              const on = priorities.includes(p);
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() =>
+                    setPriorities((l) =>
+                      on ? l.filter((x) => x !== p) : [...l, p],
+                    )
+                  }
+                  className={cn(
+                    "h-6 rounded-md border px-2 font-mono text-xs transition-colors",
+                    on
+                      ? "border-foreground bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {p}
+                </button>
+              );
+            })}
+            {canTrack && (
+              <>
+                <span className="mx-1 h-4 w-px bg-border" />
+                {STATUS_FILTERS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    aria-pressed={status === f.id}
+                    onClick={() => setStatus(f.id)}
+                    className={cn(
+                      "h-6 rounded-md border px-2 text-xs transition-colors",
+                      status === f.id
+                        ? "border-foreground bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </>
+            )}
+            {filtering && (
+              <Button
+                size="xs"
+                variant="ghost"
+                className="ml-1 text-muted-foreground"
+                onClick={() => {
+                  setSearch("");
+                  setPriorities([]);
+                  setTopic("all");
+                  setStatus("all");
+                }}
+              >
+                <X /> Clear
+              </Button>
+            )}
+            <span className="ml-auto text-xs text-muted-foreground">
+              Showing{" "}
+              <span className="font-mono text-foreground">{shown.length}</span>{" "}
+              of {total} ·{" "}
+              <span className="font-mono text-foreground">
+                {fmtMin(shown.reduce((s, i) => s + i.estMinutes, 0))}
+              </span>
+            </span>
+          </div>
+        </div>
+      )}
+
       {total === 0 ? (
         <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
           This plan is empty. Regenerate it from the job after adding skills.
+        </p>
+      ) : shown.length === 0 ? (
+        <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          No questions match these filters.
         </p>
       ) : (
         groups.map(([group, items]) => (
@@ -191,7 +377,9 @@ export function PrepWorkspace({
                   item={it}
                   state={progress[it.id] as State | undefined}
                   onMark={(s) => mark(it.id, s)}
-                  onFocus={() => setFocus(view.items.indexOf(it))}
+                  onFocus={() =>
+                    setFocus({ items: shown, index: shown.indexOf(it) })
+                  }
                 />
               ))}
             </ul>
@@ -201,9 +389,9 @@ export function PrepWorkspace({
 
       {focus !== null && (
         <FocusMode
-          items={view.items}
-          index={focus}
-          setIndex={setFocus}
+          items={focus.items}
+          index={focus.index}
+          setIndex={(i) => setFocus((f) => f && { ...f, index: i })}
           progress={progress}
           onMark={mark}
           onClose={() => setFocus(null)}

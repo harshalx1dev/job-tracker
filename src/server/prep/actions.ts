@@ -17,6 +17,7 @@ import {
   buildCrash,
   buildFull,
   buildMultiDay,
+  dropRepeats,
   matchQuestions,
   suggestPlan,
   type PlanItem,
@@ -24,8 +25,6 @@ import {
 import { parseQuestionFile } from "@/lib/question-import";
 import type { ActionResult } from "@/server/jobs/actions";
 import { writeImport } from "./importer";
-
-const CRASH_BUDGET = 360;
 
 /** Builds (or rebuilds) the job's three plans. Share settings and progress are kept. */
 export async function generatePrepPlans(
@@ -50,15 +49,19 @@ export async function generatePrepPlans(
     .select({
       id: questions.id,
       topic: questions.topic,
+      subtopic: questions.subtopic,
+      question: questions.question,
       skills: questions.skills,
       priority: questions.priority,
       frequency: questions.frequency,
       estMinutes: questions.estMinutes,
     })
     .from(questions);
-  const matched = matchQuestions(
-    bank.map((q) => ({ ...q, priority: q.priority as "P1" | "P2" | "P3" })),
-    job.skills,
+  const matched = dropRepeats(
+    matchQuestions(
+      bank.map((q) => ({ ...q, priority: q.priority as "P1" | "P2" | "P3" })),
+      job.skills,
+    ),
   );
   if (matched.length === 0) {
     return {
@@ -69,13 +72,13 @@ export async function generatePrepPlans(
 
   const multiDays = days ?? suggestPlan(job.interviewAt, new Date()).days;
   const plans: { kind: string; days: number; items: PlanItem[] }[] = [
-    { kind: "crash", days: 1, items: buildCrash(matched, CRASH_BUDGET) },
+    { kind: "crash", days: 1, items: buildCrash(matched, job.skills) },
     {
       kind: "multiday",
       days: Math.max(2, multiDays),
-      items: buildMultiDay(matched, Math.max(2, multiDays)),
+      items: buildMultiDay(matched, Math.max(2, multiDays), 240, job.skills),
     },
-    { kind: "full", days: 0, items: buildFull(matched) },
+    { kind: "full", days: 0, items: buildFull(matched, job.skills) },
   ];
 
   await db.transaction(async (tx) => {

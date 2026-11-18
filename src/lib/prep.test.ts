@@ -3,6 +3,7 @@ import {
   buildCrash,
   buildFull,
   buildMultiDay,
+  dropRepeats,
   estimateMinutes,
   matchQuestions,
   normalizeSkill,
@@ -61,83 +62,126 @@ describe("normalizeSkill / matchQuestions", () => {
 });
 
 describe("buildCrash", () => {
-  it("keeps P1 and frequent P2 only, within the budget", () => {
-    const p1 = q({ priority: "P1", estMinutes: 30 });
-    const hotP2 = q({ priority: "P2", frequency: 0.9, estMinutes: 30 });
-    const p2 = q({ priority: "P2", frequency: 0.3, estMinutes: 10 });
-    const p3 = q({ priority: "P3", frequency: 1, estMinutes: 5 });
-    const ids = buildCrash([p1, hotP2, p2, p3], 360).map((i) => i.questionId);
-    expect(ids).toContain(p1.id);
-    expect(ids).toContain(hotP2.id);
-    expect(ids).not.toContain(p2.id);
-    expect(ids).not.toContain(p3.id);
+  it("takes every P1 and nothing else", () => {
+    const p1s = Array.from({ length: 30 }, () =>
+      q({ priority: "P1", estMinutes: 40 }),
+    );
+    const p2 = q({ priority: "P2", frequency: 1 });
+    const p3 = q({ priority: "P3", frequency: 1 });
+    const ids = buildCrash([...p1s, p2, p3]).map((i) => i.questionId);
+    expect(ids.sort()).toEqual(p1s.map((x) => x.id).sort());
   });
 
-  it("never exceeds the budget", () => {
-    const pool = Array.from({ length: 30 }, () =>
-      q({ priority: "P1", estMinutes: 25 }),
-    );
-    const items = buildCrash(pool, 120);
-    const minutes = items.length * 25;
-    expect(minutes).toBeLessThanOrEqual(120);
-    expect(items).toHaveLength(4);
-  });
-
-  it("covers every topic before going deep on one", () => {
-    const react = Array.from({ length: 6 }, () =>
-      q({ topic: "React", priority: "P1", estMinutes: 30, frequency: 1 }),
-    );
+  it("puts the job's own skills first, in posting order, and output puzzles last in a topic", () => {
+    const css = q({ topic: "CSS", skills: ["css"], priority: "P1" });
     const js = q({
       topic: "JavaScript",
       skills: ["javascript"],
       priority: "P1",
-      estMinutes: 30,
-      frequency: 0,
     });
-    const css = q({
-      topic: "CSS",
-      skills: ["css"],
+    const puzzle = q({
+      topic: "JavaScript",
+      skills: ["javascript"],
+      subtopic: "Output Questions",
       priority: "P1",
-      estMinutes: 30,
+      estMinutes: 5,
+      frequency: 1,
+    });
+    const aem = q({
+      topic: "AEM",
+      skills: ["aem"],
+      priority: "P1",
       frequency: 0,
     });
-    const ids = buildCrash([...react, js, css], 90).map((i) => i.questionId);
-    expect(ids).toHaveLength(3);
-    expect(ids).toContain(js.id);
-    expect(ids).toContain(css.id);
+    const ids = buildCrash(
+      [css, puzzle, js, aem],
+      ["AEM", "JavaScript", "CSS3"],
+    );
+    expect(ids.map((i) => i.questionId)).toEqual([
+      aem.id,
+      js.id,
+      puzzle.id,
+      css.id,
+    ]);
   });
 });
 
 describe("buildMultiDay", () => {
-  it("puts P1 before P2 and leaves the last day for review", () => {
+  it("takes every P1 then every P2, no P3, and leaves the last day for review", () => {
     const p2s = Array.from({ length: 4 }, () =>
       q({ priority: "P2", estMinutes: 60 }),
     );
     const p1s = Array.from({ length: 4 }, () =>
       q({ priority: "P1", estMinutes: 60 }),
     );
-    const items = buildMultiDay([...p2s, ...p1s], 3, 240);
+    const p3 = q({ priority: "P3" });
+    const items = buildMultiDay([...p2s, ...p1s, p3], 3, 240);
+    expect(items).toHaveLength(8);
+    expect(items.map((i) => i.questionId)).not.toContain(p3.id);
     const day1 = items.filter((i) => i.day === 1).map((i) => i.questionId);
     expect(day1.sort()).toEqual(p1s.map((x) => x.id).sort());
     expect(Math.max(...items.map((i) => i.day))).toBe(2);
   });
 
-  it("respects the daily budget", () => {
+  it("spreads a long list evenly instead of dropping questions", () => {
     const pool = Array.from({ length: 20 }, () =>
       q({ priority: "P1", estMinutes: 50 }),
     );
     const items = buildMultiDay(pool, 4, 200);
-    for (const day of [1, 2, 3]) {
-      expect(
-        items.filter((i) => i.day === day).length * 50,
-      ).toBeLessThanOrEqual(200);
-    }
+    expect(items).toHaveLength(20);
+    const perDay = [1, 2, 3].map(
+      (d) => items.filter((i) => i.day === d).length,
+    );
+    expect(Math.max(...perDay) - Math.min(...perDay)).toBeLessThanOrEqual(1);
+    expect(items.some((i) => i.day === 4)).toBe(false);
   });
 
   it("clamps days to 2..14", () => {
     const pool = [q({ priority: "P1" })];
     expect(buildMultiDay(pool, 1)[0].day).toBe(1);
     expect(buildMultiDay(pool, 99)).toHaveLength(1);
+  });
+});
+
+describe("dropRepeats and the tag gate", () => {
+  it("drops a near-copy question, keeping the higher priority one", () => {
+    const keep = q({
+      priority: "P1",
+      question: "Cookies vs localStorage vs sessionStorage",
+    });
+    const copy = q({
+      priority: "P2",
+      question: "localStorage vs sessionStorage vs cookies",
+    });
+    const other = q({ priority: "P2", question: "What is event delegation?" });
+    expect(dropRepeats([copy, keep, other]).map((x) => x.id)).toEqual(
+      [keep.id, other.id].sort(
+        (x, y) =>
+          [copy, keep, other].findIndex((z) => z.id === x) -
+          [copy, keep, other].findIndex((z) => z.id === y),
+      ),
+    );
+  });
+
+  it("keeps output puzzles that differ by one word", () => {
+    const a = q({
+      question: "What logs? arrow function inside setTimeout using this.name",
+    });
+    const b = q({
+      question: "What logs? regular function inside setTimeout using this.name",
+    });
+    expect(dropRepeats([a, b])).toHaveLength(2);
+  });
+
+  it("keeps a React-tagged JavaScript question out of a job without React", () => {
+    const tagged = q({ topic: "JavaScript", skills: ["javascript", "react"] });
+    const plain = q({ topic: "JavaScript", skills: ["javascript"] });
+    expect(
+      matchQuestions([tagged, plain], ["javascript"]).map((x) => x.id),
+    ).toEqual([plain.id]);
+    expect(matchQuestions([tagged, plain], ["react"]).map((x) => x.id)).toEqual(
+      [tagged.id, plain.id],
+    );
   });
 });
 

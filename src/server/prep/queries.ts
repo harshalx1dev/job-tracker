@@ -126,6 +126,7 @@ export async function loadPlan(
         topic: questions.topic,
         subtopic: questions.subtopic,
         priority: questions.priority,
+        frequency: questions.frequency,
         difficulty: questions.difficulty,
         estMinutes: questions.estMinutes,
         question: questions.question,

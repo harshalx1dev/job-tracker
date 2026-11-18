@@ -13,6 +13,9 @@ export type BankQuestion = {
   /** 0–1: how often it's asked, from the source. */
   frequency: number;
   estMinutes: number;
+  /** Optional: used to put output puzzles last and to spot repeats. */
+  subtopic?: string | null;
+  question?: string;
 };
 
 export type PlanKind = "crash" | "multiday" | "full";
@@ -119,6 +122,9 @@ export function expandSkills(jobSkills: string[]) {
   return out;
 }
 
+/** Technologies a question can be tagged with that a job must also have, even when the topic is general. */
+const TAG_GATE = new Set(["aem", "eds", "react", "next.js"]);
+
 /** Questions whose skills or topic overlap the job's skills (implied ones included). */
 export function matchQuestions<Q extends BankQuestion>(
   questions: Q[],
@@ -130,6 +136,14 @@ export function matchQuestions<Q extends BankQuestion>(
     const topic = normalizeSkill(q.topic);
     const gate = TOPIC_GATE[topic];
     if (gate && !wanted.has(gate)) return false;
+    // A JavaScript-topic question tagged "react" is a React question: not for a job without React.
+    if (
+      q.skills.some((s) => {
+        const n = normalizeSkill(s);
+        return TAG_GATE.has(n) && !wanted.has(n);
+      })
+    )
+      return false;
     return (
       wanted.has(topic) || q.skills.some((s) => wanted.has(normalizeSkill(s)))
     );
@@ -147,87 +161,154 @@ const byValue = (a: BankQuestion, b: BankQuestion) =>
   valueOf(b) / Math.max(1, b.estMinutes) -
     valueOf(a) / Math.max(1, a.estMinutes) || a.id.localeCompare(b.id);
 
+const PRIORITY_ORDER: Record<Priority, number> = { P1: 0, P2: 1, P3: 2 };
+
 /**
- * Picks within a budget, taking topics in turn so a short plan never spends all its
- * time on one topic. Each topic's queue is ordered by value per minute.
+ * How central a question is to the job: the position of the first of the job's own
+ * listed skills (posting order) that its topic or tags name. Skills only implied
+ * by another one come last.
  */
-function roundRobin(pool: BankQuestion[], budgetMin: number) {
-  const topics = new Map<string, BankQuestion[]>();
-  for (const q of [...pool].sort(byValue)) {
-    const key = normalizeSkill(q.topic);
-    topics.set(key, [...(topics.get(key) ?? []), q]);
-  }
-  // Topics with the most valuable first question go first.
-  const queues = [...topics.values()].sort((a, b) => byValue(a[0], b[0]));
-  const picked: BankQuestion[] = [];
-  let used = 0;
-  let progress = true;
-  while (progress) {
-    progress = false;
-    for (const queue of queues) {
-      const i = queue.findIndex((q) => used + q.estMinutes <= budgetMin);
-      if (i === -1) continue;
-      const [q] = queue.splice(i, 1);
-      picked.push(q);
-      used += q.estMinutes;
-      progress = true;
-    }
-  }
-  return { picked, used };
+function skillRank(q: BankQuestion, listed: string[]) {
+  const own = [normalizeSkill(q.topic), ...q.skills.map(normalizeSkill)];
+  const i = listed.findIndex((s) => own.includes(s));
+  return i === -1 ? listed.length : i;
 }
 
-/** 1 day: P1 and the most-asked P2s only, inside the budget. */
+/** Rank of a whole topic: where the job lists it, by name ("Performance & SEO" counts for SEO). */
+function topicRank(topic: string, listed: string[]) {
+  const t = normalizeSkill(topic);
+  const words = t.split(/[^a-z0-9.]+/);
+  const i = listed.findIndex((s) => s === t || words.includes(s));
+  return i === -1 ? listed.length : i;
+}
+
+const isPuzzle = (q: BankQuestion) =>
+  /output/i.test(q.subtopic ?? "") || /^what logs\?/i.test(q.question ?? "");
+
+/** The order to study in: the job's own skills first, then priority, then value per minute. Output puzzles go last in their topic. */
+function studyOrder(questions: BankQuestion[], jobSkills: string[]) {
+  const listed = jobSkills.map(normalizeSkill).filter(Boolean);
+  const rank = new Map(questions.map((q) => [q.id, skillRank(q, listed)]));
+  return [...questions].sort(
+    (a, b) =>
+      rank.get(a.id)! - rank.get(b.id)! ||
+      Number(isPuzzle(a)) - Number(isPuzzle(b)) ||
+      PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] ||
+      byValue(a, b),
+  );
+}
+
+const STOP = new Set(
+  "the a an of in to is are what how why do does and or for on with when can you your it its be as at by from this that vs between difference explain describe".split(
+    " ",
+  ),
+);
+const tokens = (s: string) =>
+  new Set(
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w && !STOP.has(w)),
+  );
+
+/**
+ * Drops a question that asks nearly the same thing as one already kept (the same
+ * words, three quarters of them), keeping the higher-priority, more-asked one.
+ * Output puzzles are never dropped: two of them differ by one line of code.
+ */
+export function dropRepeats<Q extends BankQuestion>(questions: Q[]): Q[] {
+  const best = [...questions].sort(
+    (a, b) =>
+      PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] ||
+      b.frequency - a.frequency ||
+      a.id.localeCompare(b.id),
+  );
+  const kept: { q: Q; t: Set<string> }[] = [];
+  for (const q of best) {
+    if (!q.question || isPuzzle(q)) {
+      kept.push({ q, t: new Set() });
+      continue;
+    }
+    const t = tokens(q.question);
+    const repeat = kept.some((k) => {
+      if (!k.t.size || !t.size) return false;
+      let inter = 0;
+      for (const w of t) if (k.t.has(w)) inter++;
+      return inter / (t.size + k.t.size - inter) >= 0.75;
+    });
+    if (!repeat) kept.push({ q, t });
+  }
+  const keep = new Set(kept.map((k) => k.q.id));
+  return questions.filter((q) => keep.has(q.id));
+}
+
+/** 1 day: every P1 question, the job's own skills first. */
 export function buildCrash(
   matched: BankQuestion[],
-  budgetMin = 360,
+  jobSkills: string[] = [],
 ): PlanItem[] {
-  const pool = matched.filter(
-    (q) => q.priority === "P1" || (q.priority === "P2" && q.frequency >= 0.7),
-  );
-  const { picked } = roundRobin(pool, budgetMin);
-  return picked.map((q, i) => ({ questionId: q.id, day: 1, position: i }));
+  return studyOrder(
+    matched.filter((q) => q.priority === "P1"),
+    jobSkills,
+  ).map((q, i) => ({ questionId: q.id, day: 1, position: i }));
 }
 
 /**
- * N days: P1 first, then P2, each day filled to its budget. The last day is kept
- * for reviewing questions marked "revise", so content goes on days 1..N-1.
+ * N days: every P1 question, then every P2, spread evenly by study time over days
+ * 1..N-1. The last day is kept for reviewing questions marked "revise". A day is
+ * never smaller than dailyBudgetMin, so a short list does not stretch over all days.
  */
 export function buildMultiDay(
   matched: BankQuestion[],
   days: number,
   dailyBudgetMin = 240,
+  jobSkills: string[] = [],
 ): PlanItem[] {
   const n = Math.min(14, Math.max(2, Math.round(days)));
   const studyDays = n - 1;
+  const pool = matched.filter((q) => q.priority !== "P3");
   const ordered = [
-    ...matched.filter((q) => q.priority === "P1").sort(byValue),
-    ...matched.filter((q) => q.priority === "P2").sort(byValue),
+    ...studyOrder(
+      pool.filter((q) => q.priority === "P1"),
+      jobSkills,
+    ),
+    ...studyOrder(
+      pool.filter((q) => q.priority === "P2"),
+      jobSkills,
+    ),
   ];
+  const total = ordered.reduce((sum, q) => sum + q.estMinutes, 0);
+  const perDay = Math.max(dailyBudgetMin, total / studyDays);
   const items: PlanItem[] = [];
+  let before = 0; // study minutes placed so far
   let day = 1;
-  let used = 0;
   let position = 0;
   for (const q of ordered) {
-    if (used + q.estMinutes > dailyBudgetMin) {
-      if (day === studyDays) continue; // last study day full: try smaller ones
-      day += 1;
-      used = 0;
+    const d = Math.min(studyDays, Math.floor(before / perDay) + 1);
+    if (d !== day) {
+      day = d;
       position = 0;
     }
-    if (used + q.estMinutes > dailyBudgetMin) continue;
     items.push({ questionId: q.id, day, position: position++ });
-    used += q.estMinutes;
+    before += q.estMinutes;
   }
   return items;
 }
 
-/** Everything matched, grouped by topic, most important first within each. */
-export function buildFull(matched: BankQuestion[]): PlanItem[] {
+/** Everything matched: the job's own skills first, each topic P1 to P3, most-asked first. */
+export function buildFull(
+  matched: BankQuestion[],
+  jobSkills: string[] = [],
+): PlanItem[] {
+  const listed = jobSkills.map(normalizeSkill).filter(Boolean);
   return [...matched]
     .sort(
       (a, b) =>
+        topicRank(a.topic, listed) - topicRank(b.topic, listed) ||
         normalizeSkill(a.topic).localeCompare(normalizeSkill(b.topic)) ||
-        WEIGHT[b.priority] - WEIGHT[a.priority] ||
+        PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] ||
+        Number(isPuzzle(a)) - Number(isPuzzle(b)) ||
         b.frequency - a.frequency ||
         a.id.localeCompare(b.id),
     )
