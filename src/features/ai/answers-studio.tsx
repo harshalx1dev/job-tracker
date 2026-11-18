@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import {
   Check,
   Copy,
+  Eye,
   Loader2,
   Pencil,
   Search,
@@ -14,6 +15,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RelativeTime } from "@/components/relative-time";
@@ -344,6 +351,7 @@ function Library({
 }) {
   const [q, setQ] = useState("");
   const [tag, setTag] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<AnswerRow | null>(null);
   const tags = useMemo(
     () => Array.from(new Set(saved.flatMap((a) => a.tags))).sort(),
     [saved],
@@ -421,6 +429,14 @@ function Library({
                   <Button
                     variant="ghost"
                     size="icon-sm"
+                    aria-label="View full answer"
+                    onClick={() => setViewing(a)}
+                  >
+                    <Eye />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     aria-label="Copy answer"
                     onClick={async () => {
                       await navigator.clipboard.writeText(a.answer);
@@ -464,6 +480,47 @@ function Library({
           ))}
         </ul>
       )}
+      <Dialog
+        open={Boolean(viewing)}
+        onOpenChange={(o) => !o && setViewing(null)}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="pr-6 leading-snug">
+              {viewing?.question}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            {viewing?.answer}
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="mr-auto text-xs text-muted-foreground">
+              {viewing && `${wordCount(viewing.answer)} words`}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                if (!viewing) return;
+                await navigator.clipboard.writeText(viewing.answer);
+                toast("Copied");
+              }}
+            >
+              <Copy /> Copy
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (!viewing) return;
+                onEdit(viewing);
+                setViewing(null);
+              }}
+            >
+              <Pencil /> Edit
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
