@@ -1,7 +1,7 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/server/db";
@@ -171,8 +171,10 @@ export async function setProgress(
   if (!inPlan) return { ok: false, error: "Question not in this plan" };
 
   if (s.data === null) {
+    // Clearing keeps the row, so the review count survives.
     await db
-      .delete(prepProgress)
+      .update(prepProgress)
+      .set({ state: null })
       .where(
         and(
           eq(prepProgress.userId, user.id),
@@ -183,14 +185,26 @@ export async function setProgress(
   } else {
     await db
       .insert(prepProgress)
-      .values({ userId: user.id, planId, questionId, state: s.data })
+      .values({
+        userId: user.id,
+        planId,
+        questionId,
+        state: s.data,
+        reviews: s.data === "revise" ? 0 : 1,
+      })
       .onConflictDoUpdate({
         target: [
           prepProgress.userId,
           prepProgress.planId,
           prepProgress.questionId,
         ],
-        set: { state: s.data },
+        set: {
+          state: s.data,
+          // Each time it is marked done or confident counts as one review.
+          ...(s.data !== "revise" && {
+            reviews: sql`${prepProgress.reviews} + 1`,
+          }),
+        },
       });
   }
   return { ok: true, data: undefined };

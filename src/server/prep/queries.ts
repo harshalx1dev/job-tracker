@@ -142,6 +142,7 @@ export async function loadPlan(
           .select({
             questionId: prepProgress.questionId,
             state: prepProgress.state,
+            reviews: prepProgress.reviews,
           })
           .from(prepProgress)
           .where(
@@ -157,8 +158,13 @@ export async function loadPlan(
     ...row,
     items,
     progress: Object.fromEntries(
-      progress.map((p) => [p.questionId, p.state]),
+      progress.filter((p) => p.state).map((p) => [p.questionId, p.state]),
     ) as Record<string, string>,
+    reviews: Object.fromEntries(
+      progress
+        .filter((p) => p.reviews > 0)
+        .map((p) => [p.questionId, p.reviews]),
+    ) as Record<string, number>,
   };
 }
 

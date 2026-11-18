@@ -71,15 +71,19 @@ const SORTS = [
   { id: "short", label: "Shortest first" },
   { id: "long", label: "Longest first" },
   { id: "asked", label: "Most asked" },
+  { id: "least", label: "Least reviewed" },
 ] as const;
 type SortId = (typeof SORTS)[number]["id"];
 
-const sorters: Record<Exclude<SortId, "plan">, (a: Item, b: Item) => number> = {
+const sorters = (
+  reviews: Record<string, number>,
+): Record<Exclude<SortId, "plan">, (a: Item, b: Item) => number> => ({
+  least: (a, b) => (reviews[a.id] ?? 0) - (reviews[b.id] ?? 0),
   priority: (a, b) => a.priority.localeCompare(b.priority),
   short: (a, b) => a.estMinutes - b.estMinutes,
   long: (a, b) => b.estMinutes - a.estMinutes,
   asked: (a, b) => b.frequency - a.frequency,
-};
+});
 
 const fmtMin = (m: number) =>
   m >= 60
@@ -97,6 +101,7 @@ export function PrepWorkspace({
   canTrack: boolean;
 }) {
   const [progress, setLocal] = useState<Record<string, string>>(view.progress);
+  const [reviews, setReviews] = useState<Record<string, number>>(view.reviews);
   // The list is frozen when Focus mode opens, so marking a question never shifts it under a filter.
   const [focus, setFocus] = useState<{ items: Item[]; index: number } | null>(
     null,
@@ -138,8 +143,8 @@ export function PrepWorkspace({
         (status === "all" || (status === "todo" ? !st : st === status))
       );
     });
-    return sort === "plan" ? list : [...list].sort(sorters[sort]);
-  }, [view.items, progress, search, priorities, topic, status, sort]);
+    return sort === "plan" ? list : [...list].sort(sorters(reviews)[sort]);
+  }, [view.items, progress, reviews, search, priorities, topic, status, sort]);
 
   const groups = useMemo(() => {
     if (sort !== "plan") return [["Sorted", shown]] as [string, Item[]][];
@@ -167,6 +172,9 @@ export function PrepWorkspace({
     async (questionId: string, state: State | null) => {
       if (!canTrack) return void toast("Sign in to track your progress");
       const prev = progress[questionId];
+      const counts = state === "done" || state === "confident";
+      if (counts)
+        setReviews((r) => ({ ...r, [questionId]: (r[questionId] ?? 0) + 1 }));
       setLocal((p) => {
         const n = { ...p };
         if (state) n[questionId] = state;
@@ -175,6 +183,8 @@ export function PrepWorkspace({
       });
       const res = await setProgress(view.plan.id, questionId, state);
       if (!res.ok) {
+        if (counts)
+          setReviews((r) => ({ ...r, [questionId]: (r[questionId] ?? 1) - 1 }));
         setLocal((p) => ({ ...p, [questionId]: prev }));
         toast.error(res.error);
       }
@@ -376,6 +386,7 @@ export function PrepWorkspace({
                   key={it.id}
                   item={it}
                   state={progress[it.id] as State | undefined}
+                  reviews={reviews[it.id] ?? 0}
                   onMark={(s) => mark(it.id, s)}
                   onFocus={() =>
                     setFocus({ items: shown, index: shown.indexOf(it) })
@@ -393,6 +404,7 @@ export function PrepWorkspace({
           index={focus.index}
           setIndex={(i) => setFocus((f) => f && { ...f, index: i })}
           progress={progress}
+          reviews={reviews}
           onMark={mark}
           onClose={() => setFocus(null)}
         />
@@ -433,11 +445,13 @@ function StateButtons({
 function QuestionRow({
   item,
   state,
+  reviews,
   onMark,
   onFocus,
 }: {
   item: Item;
   state?: State;
+  reviews: number;
   onMark: (s: State | null) => void;
   onFocus: () => void;
 }) {
@@ -468,6 +482,7 @@ function QuestionRow({
               item.subtopic || item.topic,
               item.difficulty,
               `${item.estMinutes} min`,
+              reviews > 0 ? `reviewed ${reviews}×` : null,
             ]
               .filter(Boolean)
               .join(" · ")}
@@ -527,6 +542,7 @@ function FocusMode({
   index,
   setIndex,
   progress,
+  reviews,
   onMark,
   onClose,
 }: {
@@ -534,6 +550,7 @@ function FocusMode({
   index: number;
   setIndex: (i: number) => void;
   progress: Record<string, string>;
+  reviews: Record<string, number>;
   onMark: (id: string, s: State | null) => void;
   onClose: () => void;
 }) {
@@ -592,6 +609,7 @@ function FocusMode({
           <p className="font-mono text-xs text-brand">
             {item.priority} · {item.subtopic || item.topic} · {item.estMinutes}{" "}
             min
+            {reviews[item.id] ? ` · reviewed ${reviews[item.id]}×` : ""}
           </p>
           <h2 className="mt-3 text-2xl leading-snug font-medium tracking-[-0.02em]">
             {item.question}

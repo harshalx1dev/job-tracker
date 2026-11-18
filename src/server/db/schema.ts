@@ -648,7 +648,10 @@ export const prepProgress = pgTable(
     questionId: text("question_id")
       .notNull()
       .references(() => questions.id, { onDelete: "cascade" }),
-    state: text("state").notNull(), // done | confident | revise
+    /** done | confident | revise; null once cleared (the row stays so the count survives). */
+    state: text("state"),
+    /** How many times the person has marked this question done or confident. */
+    reviews: integer("reviews").notNull().default(0),
     updatedAt: updatedAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.planId, t.questionId] })],
