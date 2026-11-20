@@ -83,9 +83,9 @@ The user then fills the missing answers in the job card, moves the job to Ready 
 ## Workflow B: apply to the jobs the user approved
 
 1. Call list_jobs_to_apply. Only the jobs in "eligible" may be applied to. For "skipped" jobs, tell the user the reason and move on. Never apply to a job that is not in "eligible".
-2. For each eligible job: open applyUrl. Fill the form with the given answers exactly as written. Do not rewrite them or add facts. Attach the resume named in "resume" if the form asks for a file (the user may need to download it from Trackr and attach it; if you cannot, stop and tell them).
+2. For each eligible job: open applyUrl. If oneClickOnly is true, no answers were prepared: apply only if the application is one click with no questions (a plain Apply button, or a dialog with only an optional message you can leave empty). If the form asks anything, do not guess: stop, call log_application with outcome "needs_input" listing each question as a field with missing true, and tell the user. Otherwise fill the form with the given answers exactly as written. Do not rewrite them or add facts. Attach the resume named in "resume" if the form asks for a file (the user may need to download it from Trackr and attach it; if you cannot, stop and tell them).
 3. If anything blocks you (login, CAPTCHA, a code, a question that is not in the answers, a changed form), stop on that job. Call log_application with outcome "failed" (with failureReason) or "needs_input", and go on to the next job.
-4. If you submit it, call log_application with outcome "applied", the platform, and every field and value you actually sent. Then call update_job to move the job to the Applied stage.
+4. If you submit it, call log_application with outcome "applied", the platform, and every field and value you actually sent (an empty optional field counts too), and in notes any confirmation message or reference number the site showed after submitting. Then call update_job to move the job to the Applied stage.
 5. If jobSearchPreferences.summaryEmail is true, call email_me_summary for all the application ids from this run. Either way, report applied, failed and skipped jobs to the user in this chat.
 
 ## Workflow C: LinkedIn hiring posts, and HR email jobs (drafts only)

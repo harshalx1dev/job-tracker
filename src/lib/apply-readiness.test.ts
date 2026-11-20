@@ -91,7 +91,19 @@ describe("applyReadiness", () => {
     expect(r.eligible).toBe(false);
   });
 
-  it("needs prepared answers to exist", () => {
-    expect(applyReadiness(ready({ applications: [] })).eligible).toBe(false);
+  it("allows a job with no prepared answers, for one-click applications only", () => {
+    const r = applyReadiness(ready({ applications: [] }));
+    expect(r).toMatchObject({ eligible: true, oneClickOnly: true });
+    expect(applyReadiness(ready()).oneClickOnly).toBe(false);
+  });
+
+  it("still needs the tick and the stage without prepared answers", () => {
+    expect(
+      applyReadiness(ready({ applications: [], applyWithAi: false })).eligible,
+    ).toBe(false);
+    expect(
+      applyReadiness(ready({ applications: [], stageName: "Wishlist" }))
+        .eligible,
+    ).toBe(false);
   });
 });

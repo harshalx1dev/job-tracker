@@ -236,17 +236,19 @@ export async function readJobsToApply(userId: string) {
       });
       continue;
     }
-    const prepared = apps.find((a) => a.outcome === "prepared")!; // newest first
+    const prepared = apps.find((a) => a.outcome === "prepared"); // newest first
     eligible.push({
       jobId: j.id,
       company: j.company,
       title: j.title,
-      applyUrl: prepared.url ?? j.url,
-      preparedApplicationId: prepared.id,
-      resume: prepared.resumeTitle,
-      resumeId: prepared.resumeId,
-      notes: prepared.notes,
-      answers: prepared.submitted,
+      applyUrl: prepared?.url ?? j.url,
+      preparedApplicationId: prepared?.id ?? null,
+      resume: prepared?.resumeTitle ?? null,
+      resumeId: prepared?.resumeId ?? null,
+      notes: prepared?.notes ?? null,
+      answers: prepared?.submitted ?? [],
+      /** No answers were prepared: apply only if the form has no questions (one click), otherwise stop. */
+      oneClickOnly: r.oneClickOnly,
     });
   }
   return { eligible, skipped };

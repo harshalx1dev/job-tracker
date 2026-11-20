@@ -25,6 +25,11 @@ export type Readiness = {
   reasons: string[];
   /** Fields still empty or flagged as needing the user. */
   missingFields: string[];
+  /**
+   * True when no answers were prepared. The job can still be applied to, but only
+   * if the application turns out to be one-click, with no questions to answer.
+   */
+  oneClickOnly: boolean;
 };
 
 export const isMissing = (f: Field) => f.missing === true || !f.value.trim();
@@ -44,14 +49,19 @@ export function applyReadiness(input: ReadinessInput): Readiness {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )[0];
   let missingFields: string[] = [];
-  if (!prepared) {
-    reasons.push("There are no prepared answers for this job.");
-  } else {
+  // No prepared answers is not a block: a one-click application has none to prepare.
+  // Claude opens the page and stops if it asks anything.
+  if (prepared) {
     missingFields = prepared.submitted.filter(isMissing).map((f) => f.field);
     if (missingFields.length)
       reasons.push(
         `Some fields still need an answer: ${missingFields.join(", ")}.`,
       );
   }
-  return { eligible: reasons.length === 0, reasons, missingFields };
+  return {
+    eligible: reasons.length === 0,
+    reasons,
+    missingFields,
+    oneClickOnly: !prepared,
+  };
 }

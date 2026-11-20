@@ -47,14 +47,8 @@ export function ApplyPanel({
       text: `Stage is "${READY_STAGE}"`,
     },
     {
-      ok: list.some((a) => a.outcome === "prepared"),
-      text: "Answers are prepared",
-    },
-    {
-      ok:
-        readiness.missingFields.length === 0 &&
-        list.some((a) => a.outcome === "prepared"),
-      text: "Every answer is filled in",
+      ok: readiness.missingFields.length === 0,
+      text: "Every prepared answer is filled in",
     },
   ];
 
@@ -108,6 +102,13 @@ export function ApplyPanel({
           </li>
         ))}
       </ul>
+      {readiness.oneClickOnly && (
+        <p className="text-muted-foreground text-xs">
+          No answers prepared. Claude will apply only if the application is one
+          click with no questions, and will stop and tell you if the form asks
+          anything.
+        </p>
+      )}
       {list.length > 0 && <ApplicationsSection list={list} onSaved={saved} />}
     </div>
   );
