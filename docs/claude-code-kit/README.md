@@ -25,6 +25,7 @@ A ready-made workspace so Claude runs your job search with real `/` commands. Cl
 | `/trackr-start` | Loads the playbook and your data, asks which resume to use, tells you any gaps |
 | `/trackr-refresh` | Reloads the latest data from Trackr and tells you what changed. Use it after you edit your profile, answers or preferences |
 | `/trackr-log-skipped` | Adds the listings Claude looked at and skipped earlier in this session to the Reviewed tab in Trackr |
+| `/trackr-cutshort` | Answers the questionnaires recruiters send on Cutshort after you apply, and checks for new ones. Add `draft` to prepare answers without submitting |
 | `/trackr-search` | Searches LinkedIn, Naukri, Indeed, company career pages and LinkedIn hiring posts in turn, scores the jobs, adds the good ones, prepares answers for the best. Never submits |
 | `/trackr-apply` | Applies only to jobs you approved in Trackr (Ready to apply, Apply with AI ticked, nothing missing) |
 | `/trackr-hr-emails` | Finds posts with an HR email address and drafts emails. Never sends |

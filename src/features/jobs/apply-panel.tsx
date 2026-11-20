@@ -104,9 +104,10 @@ export function ApplyPanel({
       </ul>
       {readiness.oneClickOnly && (
         <p className="text-muted-foreground text-xs">
-          No answers prepared. Claude will apply only if the application is one
-          click with no questions, and will stop and tell you if the form asks
-          anything.
+          No answers prepared. Claude will click Apply and answer any questions
+          from your saved profile and answers. If it hits one it cannot answer,
+          it leaves that tab open for you to finish and moves on to the next
+          job.
         </p>
       )}
       {list.length > 0 && <ApplicationsSection list={list} onSaved={saved} />}
