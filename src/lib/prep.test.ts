@@ -153,6 +153,13 @@ describe("skills as a posting writes them", () => {
     expect(skillVariants("SCSS")).toContain("sass");
   });
 
+  it("matches REST questions for a job that lists REST APIs", () => {
+    const rest = q({ topic: "REST APIs & Auth", skills: ["rest", "security"] });
+    expect(
+      matchQuestions([rest], ["REST APIs", "Git"]).map((x) => x.id),
+    ).toEqual([rest.id]);
+  });
+
   it("matches AEM questions for a job that lists AEM in words", () => {
     const aem = q({ topic: "AEM", skills: ["aem"], priority: "P1" });
     const react = q({ topic: "React", skills: ["react"], priority: "P1" });
