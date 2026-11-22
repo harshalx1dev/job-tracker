@@ -107,9 +107,42 @@ const TOPIC_GATE: Record<string, string> = {
   css: "css",
 };
 
+/** Technologies a posting can name inside a longer phrase ("AEM Components and Templates"). */
+const KNOWN_TECH = new Set([
+  ...Object.values(TOPIC_GATE),
+  "jquery",
+  "bootstrap",
+  "htl",
+  "sass",
+]);
+
+/**
+ * The forms of one skill as a posting writes it: "Adobe Experience Manager (AEM)" is
+ * both that name and "AEM", "JavaScript (ES6+)" is JavaScript, and "AEM Components and
+ * Templates" is an AEM skill.
+ */
+export function skillVariants(raw: string): string[] {
+  const lower = raw.toLowerCase();
+  const out = new Set([normalizeSkill(raw)]);
+  const inner = [...lower.matchAll(/\(([^)]+)\)/g)].map((m) => m[1]);
+  for (const part of [lower.replace(/\([^)]*\)/g, " "), ...inner])
+    out.add(normalizeSkill(part));
+  for (const word of lower.split(/[^a-z0-9.+#]+/)) {
+    const n = normalizeSkill(word);
+    if (KNOWN_TECH.has(n)) out.add(n);
+  }
+  out.delete("");
+  return [...out];
+}
+
+/** The job's listed skills in posting order, every form of each, without repeats. */
+function listedSkills(jobSkills: string[]) {
+  return [...new Set(jobSkills.flatMap(skillVariants))];
+}
+
 /** The job's skills plus everything they imply. */
 export function expandSkills(jobSkills: string[]) {
-  const out = new Set(jobSkills.map(normalizeSkill).filter(Boolean));
+  const out = new Set(listedSkills(jobSkills));
   for (let changed = true; changed;) {
     changed = false;
     for (const s of [...out])
@@ -187,7 +220,7 @@ const isPuzzle = (q: BankQuestion) =>
 
 /** The order to study in: the job's own skills first, then priority, then value per minute. Output puzzles go last in their topic. */
 function studyOrder(questions: BankQuestion[], jobSkills: string[]) {
-  const listed = jobSkills.map(normalizeSkill).filter(Boolean);
+  const listed = listedSkills(jobSkills);
   const rank = new Map(questions.map((q) => [q.id, skillRank(q, listed)]));
   return [...questions].sort(
     (a, b) =>
@@ -301,7 +334,7 @@ export function buildFull(
   matched: BankQuestion[],
   jobSkills: string[] = [],
 ): PlanItem[] {
-  const listed = jobSkills.map(normalizeSkill).filter(Boolean);
+  const listed = listedSkills(jobSkills);
   return [...matched]
     .sort(
       (a, b) =>

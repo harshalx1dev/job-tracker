@@ -7,6 +7,7 @@ import {
   estimateMinutes,
   matchQuestions,
   normalizeSkill,
+  skillVariants,
   suggestPlan,
   valueOf,
   type BankQuestion,
@@ -140,6 +141,26 @@ describe("buildMultiDay", () => {
     const pool = [q({ priority: "P1" })];
     expect(buildMultiDay(pool, 1)[0].day).toBe(1);
     expect(buildMultiDay(pool, 99)).toHaveLength(1);
+  });
+});
+
+describe("skills as a posting writes them", () => {
+  it("reads the acronym in brackets, the base word and the tech inside a phrase", () => {
+    expect(skillVariants("Adobe Experience Manager (AEM)")).toContain("aem");
+    expect(skillVariants("JavaScript (ES6+)")).toContain("javascript");
+    expect(skillVariants("AEM Components and Templates")).toContain("aem");
+    expect(skillVariants("HTML5")).toContain("html");
+    expect(skillVariants("SCSS")).toContain("sass");
+  });
+
+  it("matches AEM questions for a job that lists AEM in words", () => {
+    const aem = q({ topic: "AEM", skills: ["aem"], priority: "P1" });
+    const react = q({ topic: "React", skills: ["react"], priority: "P1" });
+    const ids = matchQuestions(
+      [aem, react],
+      ["Adobe Experience Manager (AEM)", "React.js"],
+    ).map((x) => x.id);
+    expect(ids).toEqual([aem.id, react.id]);
   });
 });
 
